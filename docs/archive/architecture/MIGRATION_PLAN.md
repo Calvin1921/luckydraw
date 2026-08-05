@@ -71,7 +71,7 @@ export default defineSchema({
     importSource: v.union(
       v.literal("manual"),
       v.literal("csv"),
-      v.literal("eventrsvp")
+      v.literal("external")
     ),
     isEligible: v.boolean(),
   })

@@ -1,9 +1,14 @@
 # Lucky Draw — Quality Assurance
 
-> **Ship Decision: BLOCKED**
-> **Last updated:** 2026-04-08
+> **HISTORICAL SNAPSHOT (2026-04-08)** — this is the QA gate from the original MVP
+> build, kept as process evidence. Superseded: the showstopper draw bugs were fixed
+> in later development (the full draw flow — trigger, animation, reveal,
+> confirm/reject — runs end to end), and the two access-control vulnerabilities
+> (VULN-001/002) were patched on 2026-08-05; see
+> [SECURITY_REVIEW_FINDINGS.md](./SECURITY_REVIEW_FINDINGS.md) for current status.
+> The "BLOCKED" verdict below describes the 2026-04-08 state, not the current one.
 
-The Lucky Draw MVP has **2 showstopper bugs** that make the core draw non-functional, **2 must-fix security vulnerabilities** (PDPO data breach risk), and **14 additional critical/high UX bugs**. Zero integration or E2E test coverage. Full bug tracker in [TODO.md](./TODO.md).
+The Lucky Draw MVP had, at the time of this snapshot, **2 showstopper bugs** making the core draw non-functional, **2 must-fix security vulnerabilities** (PDPO data breach risk), and **14 additional critical/high UX bugs**. Zero integration or E2E test coverage. Full bug tracker in [TODO.md](./TODO.md).
 
 ---
 

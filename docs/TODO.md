@@ -1,7 +1,10 @@
 # Lucky Draw — TODO Tracker
 
-> **Last updated:** 2026-04-08
-> **Single source of truth** for all known bugs, vulnerabilities, and tech debt.
+> **HISTORICAL SNAPSHOT (2026-04-08)** — the bug/debt tracker from the original MVP
+> build, kept as process evidence. Items P0/P1 listed here were resolved in later
+> development (draw flow works end to end; VULN-001/002 patched 2026-08-05 — see
+> [SECURITY_REVIEW_FINDINGS.md](./SECURITY_REVIEW_FINDINGS.md)). Remaining items
+> should be read as a point-in-time backlog, not current status.
 
 ---
 

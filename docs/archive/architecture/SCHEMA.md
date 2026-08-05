@@ -67,7 +67,7 @@ Imported from CSV or entered manually. Up to 300 per event (enforced at mutation
 | nameZh       | v.optional(v.string())                                                  | NO       | Chinese name (displayed in zh-HK locale)       |
 | email        | v.optional(v.string())                                                  | NO       | For winner notification and CSV export         |
 | phone        | v.optional(v.string())                                                  | NO       | Optional contact field                         |
-| importSource | v.union(v.literal("manual"), v.literal("csv"), v.literal("eventrsvp")) | YES      | Tracks how this participant was added          |
+| importSource | v.union(v.literal("manual"), v.literal("csv"), v.literal("external")) | YES      | Tracks how this participant was added          |
 | isEligible   | v.boolean()                                                             | YES      | `false` = eliminated from future draws         |
 
 **Indexes:**

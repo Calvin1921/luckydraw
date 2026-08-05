@@ -234,7 +234,7 @@ erDiagram
 | `nameZh` | `v.optional(v.string())` | Chinese name |
 | `email` | `v.optional(v.string())` | Contact email |
 | `phone` | `v.optional(v.string())` | Contact phone |
-| `importSource` | `v.union("manual", "csv", "eventrsvp")` | How they were added |
+| `importSource` | `v.union("manual", "csv", "external")` | How they were added |
 | `isEligible` | `v.boolean()` | Can be drawn (default: true) |
 
 **Indexes:**
@@ -420,7 +420,7 @@ idle ──(triggerDraw)──▶ result ──(confirmWinner)──▶ idle (pr
 - **Reactive:** Yes — participants page, stage, remote, audience
 
 #### `participants.bulkImport` (mutation)
-- **Args:** `{ eventId: v.id("drawEvents"), participants: v.array(v.object({ name, nameZh?, email?, phone? })), importSource: v.union("csv", "eventrsvp") }`
+- **Args:** `{ eventId: v.id("drawEvents"), participants: v.array(v.object({ name, nameZh?, email?, phone? })), importSource: v.union("csv", "external") }`
 - **Returns:** `{ imported: number }`
 - **Auth:** Yes
 - **Side effects:** Inserts all participants with `isEligible: true`
@@ -847,21 +847,11 @@ graph LR
     ConvexProd <-->|webhook| StripeProd
 ```
 
-### Turborepo Workspace
+### Repository Shape
 
-```json
-{
-  "workspaces": ["luckydraw", "eventrsvp", "eventfinance"],
-  "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": [".next/**"] },
-    "dev": { "cache": false, "persistent": true },
-    "test": {},
-    "lint": {}
-  }
-}
-```
-
-Each product (`luckydraw`, `eventrsvp`, `eventfinance`) is an independent Next.js app with its own Convex deployment. Turborepo orchestrates parallel dev/build/test across all apps.
+Lucky Draw is a standalone Next.js app with its own Convex deployment. `pnpm
+typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` run from the repo root;
+CI runs the same four steps on every push (`.github/workflows/ci.yml`).
 
 ### Deploy Checklist
 

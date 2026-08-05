@@ -57,13 +57,7 @@ These three mutations are designed for the unauthenticated phone remote. The `re
 - **Impact:** Full PII exfiltration of all event participants. In HK context, violates PDPO (Personal Data Ordinance).
 - **Evidence:** `convex/participants.ts:8-16` — `query({ handler: async (ctx, args) => ctx.db.query(...).collect() })` — no `ctx.auth.getUserIdentity()` call.
 - **Remediation:** Add ownership guard to the query, or create a separate public-safe projection that strips email/phone for authenticated-only reads.
-
-```ts
-// Fix: add to participants.list handler
-const identity = await ctx.auth.getUserIdentity()
-if (!identity) throw new Error("Unauthenticated")
-// then call assertOrgOwnership
-```
+- **Status:** ✅ RESOLVED 2026-08-05 (commit `57291aa`) — `participants.list` now calls `assertOrgOwnership`; the public stage/audience screens use a new `participants.listForDraw` projection returning only `name`/`nameZh`/`isEligible`, never contact details. Regression coverage: `tests/access-control.test.ts` (unauthenticated rejection, cross-org rejection, owner success, projection shape).
 
 ---
 
@@ -78,6 +72,7 @@ if (!identity) throw new Error("Unauthenticated")
 - **Impact:** Email exfiltration of prize winners.
 - **Evidence:** `convex/winnerLogs.ts:4-15` — no auth check.
 - **Remediation:** Add auth + ownership guard, or strip `participantEmail` from the query result if it need not be returned in the public export path.
+- **Status:** ✅ RESOLVED 2026-08-05 (commit `57291aa`) — `winnerLogs.listConfirmed` now calls `assertOrgOwnership`. Regression test in `tests/access-control.test.ts`.
 
 ---
 
@@ -88,6 +83,7 @@ if (!identity) throw new Error("Unauthenticated")
 - **Impact:** Event metadata disclosure; `stripeSessionId` exposure (low risk since Stripe sessions expire).
 - **Evidence:** `convex/events.ts:36-41` (get), `convex/events.ts:7-34` (list).
 - **Remediation:** Add auth guard to `events.list`. For `events.get`, the HTTP export action already checks auth before calling it — acceptable, but a server-only variant would be cleaner.
+- **Status:** ✅ RESOLVED (list) 2026-08-05 (commit `57291aa`) — `events.list` now calls `assertCallerOwnsOrg`; regression test in `tests/access-control.test.ts`. `events.get` intentionally remains public: the unauthenticated draw surfaces (stage/audience/remote) read event name/branding from it, per the physical-presence model.
 
 ---
 
@@ -126,17 +122,18 @@ if (!identity) throw new Error("Unauthenticated")
 
 ## Verdict
 
-**CLEARED WITH CONDITIONS**
-
-Two HIGH/CRITICAL data exposure vulnerabilities (VULN-001, VULN-002) must be resolved before any production deployment involving real participant PII. The core draw integrity (C1–C4) is sound. Stripe webhook and CSV security are solid.
+**CLEARED WITH CONDITIONS** *(original verdict, 2026-04-08)* — conditions since met:
+the two data-exposure findings were fixed on 2026-08-05 (commit `57291aa`, regression
+tests in `tests/access-control.test.ts`). The core draw integrity (C1–C4) is sound.
+Stripe webhook and CSV security are solid.
 
 ### Must Fix Before Ship
-1. **VULN-001** — Add auth + ownership guard to `participants.list`
-2. **VULN-002** — Add auth guard to `winnerLogs.listConfirmed`
+1. **VULN-001** — Add auth + ownership guard to `participants.list` — ✅ resolved (`57291aa`)
+2. **VULN-002** — Add auth guard to `winnerLogs.listConfirmed` — ✅ resolved (`57291aa`)
 
 ### Should Fix Before Ship
-3. **VULN-003** — Auth guard on `events.list`
+3. **VULN-003** — Auth guard on `events.list` — ✅ resolved (`57291aa`; `events.get` stays public by design for the draw surfaces)
 
 ### Can Ship With Known Risk (document in security notes)
-4. **VULN-004** — remoteToken expiry
-5. **VULN-005** — createCheckoutSession ownership
+4. **VULN-004** — remoteToken expiry — open, accepted risk (see finding)
+5. **VULN-005** — createCheckoutSession ownership — open, accepted risk (see finding)

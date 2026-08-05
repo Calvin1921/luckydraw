@@ -54,7 +54,7 @@ sequenceDiagram
 
 **MVP capabilities:** Create event, CSV import (max 300), manual participant add, prize tiers with individual prizes, branding (color, locale, theme selection).
 
-**Not in MVP:** Stripe self-checkout (manual license activation), EventRSVP import, logo upload, font selection, background video/music.
+**Not in MVP:** Stripe self-checkout (manual license activation), import from external RSVP/guest-list tools, logo upload, font selection, background video/music.
 
 ---
 
@@ -172,7 +172,7 @@ graph TB
 | Feature | Full Vision (OBJECTIVE.md) | MVP Reality |
 |---------|---------------------------|-------------|
 | Payment | Stripe + FPS/PayMe self-checkout | Manual license activation |
-| Participant import | CSV + manual + EventRSVP API + bulk paste | CSV + manual only |
+| Participant import | CSV + manual + external RSVP-tool API + bulk paste | CSV + manual only |
 | Draw modes | Single + group + elimination | Single winner only |
 | Branding | Logo, video bg, music, fonts, sponsor reel | Color, locale, theme |
 | Export | PDF certificates + audit CSV | Winner CSV only |

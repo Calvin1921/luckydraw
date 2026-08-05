@@ -19,7 +19,7 @@ graph TB
 
     subgraph V1["V1 — Full Self-Serve"]
         v1a["Stripe + FPS self-checkout"]
-        v1b["EventRSVP import"]
+        v1b["External RSVP-tool import"]
         v1c["Group + elimination draw"]
         v1d["Full branding (video, music, fonts)"]
         v1e["PDF export + certificates"]
@@ -72,7 +72,7 @@ Status key: **Built** = code exists and works | **Built (BLOCKED)** = code exist
 | Delete participant | Built | Remove individual participant with auth check |
 | Bilingual names | Built | name (English) + nameZh (Traditional Chinese) stored and displayed |
 
-**Not in MVP:** EventRSVP import, bulk paste, duplicate detection, custom tags, check-in filter, search/filter.
+**Not in MVP:** import from external RSVP/guest-list tools, bulk paste, duplicate detection, custom tags, check-in filter, search/filter.
 
 ### Prize Management
 
@@ -151,7 +151,7 @@ Status key: **Built** = code exists and works | **Built (BLOCKED)** = code exist
 | Module | Feature | Priority |
 |--------|---------|----------|
 | Billing | Stripe + FPS/PayMe self-checkout with license enforcement | HIGH |
-| Import | EventRSVP API integration (OAuth + guest import) | HIGH |
+| Import | External RSVP-tool API integration (OAuth + guest import) | HIGH |
 | Draw Engine | Group draw mode (N winners simultaneously) | MEDIUM |
 | Draw Engine | Elimination mode (last N standing win) | MEDIUM |
 | Branding | Full suite: video bg, music, fonts, sponsor reel, tagline | MEDIUM |

@@ -24,7 +24,7 @@ export default function AudiencePage({ params }: { params: Promise<{ eventId: st
 
   const event = useQuery(api.events.get, eventId ? { eventId } : "skip")
   const session = useQuery(api.draw.getActiveSession, eventId ? { eventId } : "skip")
-  const participants = useQuery(api.participants.list, eventId ? { eventId } : "skip")
+  const participants = useQuery(api.participants.listForDraw, eventId ? { eventId } : "skip")
   const tiers = useQuery(api.prizes.listTiers, eventId ? { eventId } : "skip")
 
   // Invalid ID in URL

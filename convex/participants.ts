@@ -8,10 +8,32 @@ const BULK_IMPORT_CHUNK_SIZE = 500
 export const list = query({
   args: { eventId: v.id("drawEvents") },
   handler: async (ctx, args) => {
+    await assertOrgOwnership(ctx, args.eventId) // VULN-001: rows carry email/phone — owner only
     return ctx.db
       .query("participants")
       .withIndex("by_event", q => q.eq("eventId", args.eventId))
       .collect()
+  },
+})
+
+/**
+ * Public projection for the draw surfaces. Stage/audience run unauthenticated
+ * (physical-presence model), but only need what the animation renders — never
+ * email/phone.
+ */
+export const listForDraw = query({
+  args: { eventId: v.id("drawEvents") },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("participants")
+      .withIndex("by_event", q => q.eq("eventId", args.eventId))
+      .collect()
+    return rows.map(p => ({
+      _id: p._id,
+      name: p.name,
+      nameZh: p.nameZh ?? null,
+      isEligible: p.isEligible,
+    }))
   },
 })
 
@@ -26,7 +48,7 @@ export const bulkImport = mutation({
         phone: v.optional(v.string()),
       })
     ),
-    importSource: v.union(v.literal("csv"), v.literal("eventrsvp")),
+    importSource: v.union(v.literal("csv"), v.literal("external")),
   },
   handler: async (ctx, args) => {
     await assertOrgOwnership(ctx, args.eventId) // C1

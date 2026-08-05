@@ -9,6 +9,7 @@ const DEFAULT_PRIMARY_COLOR = "#e2a84b"
 export const list = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
+    await assertCallerOwnsOrg(ctx, args.orgId) // VULN-003: dashboard listing — owner only
     const events = await ctx.db
       .query("drawEvents")
       .withIndex("by_org", q => q.eq("orgId", args.orgId))

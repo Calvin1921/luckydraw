@@ -14,7 +14,8 @@ export async function assertOrgOwnership(
   ctx: ReadableCtx,
   eventId: Id<"drawEvents">
 ): Promise<void> {
-  // DEV BYPASS — skip auth in local dev when DEV_BYPASS=true
+  // DEV BYPASS — skip ownership checks in local dev when the Convex deployment has
+  // DEV_BYPASS=true (see .env.example). Never set this on a deployment with real data.
   if (process.env.DEV_BYPASS === "true") return
 
   const identity = await ctx.auth.getUserIdentity()

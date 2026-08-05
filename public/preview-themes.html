@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Draw — Theme Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #08080c;
+    color: #c0c0c0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    text-align: center;
+    padding: 56px 20px 12px;
+  }
+  header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: #e8e8ec;
+  }
+  header p {
+    color: #555;
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 400;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 20px;
+    padding: 28px 32px 80px;
+    max-width: 1620px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #0c0c12;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.4s cubic-bezier(0.25,0.1,0.25,1), transform 0.4s cubic-bezier(0.25,0.1,0.25,1);
+    cursor: pointer;
+    position: relative;
+  }
+  .card:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-1px);
+  }
+  .card .canvas-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+  .card canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Slight filmic grading on all canvases */
+    filter: contrast(1.04) saturate(0.88) brightness(0.97);
+  }
+  /* Vignette overlay on every card */
+  .card .canvas-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+  }
+  .card-info {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .card-info .emoji { font-size: 20px; line-height: 1; }
+  .card-info .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ddd;
+    letter-spacing: -0.2px;
+  }
+  .card-info .desc {
+    font-size: 11px;
+    color: #666;
+    margin-top: 1px;
+  }
+  .badge {
+    margin-left: auto;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .badge-r3f { background: rgba(99,102,241,0.12); color: rgba(167,139,250,0.8); }
+  .badge-canvas { background: rgba(34,197,94,0.08); color: rgba(134,239,172,0.7); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.94);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+  }
+  .overlay.active { display: flex; }
+  .overlay .big-wrap {
+    position: relative;
+    width: min(88vw, 88vh);
+    height: min(88vw, 88vh);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .overlay canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: contrast(1.04) saturate(0.88) brightness(0.97);
+  }
+  .overlay .big-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.45) 100%);
+    pointer-events: none;
+  }
+  .overlay .close-hint {
+    position: fixed;
+    top: 24px;
+    right: 28px;
+    color: #444;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Theme Preview</h1>
+  <p>8 draw ceremonies. Click to expand.</p>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<div class="overlay" id="overlay">
+  <span class="close-hint">ESC to close</span>
+  <div class="big-wrap">
+    <canvas id="bigCanvas" width="800" height="800"></canvas>
+  </div>
+</div>
+
+<script>
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
+// Soft gaussian splat — the foundation of premium particles
+function splat(ctx, x, y, radius, r, g, b, alpha) {
+  var grd = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  grd.addColorStop(0,   "rgba(" + r + "," + g + "," + b + "," + alpha + ")");
+  grd.addColorStop(0.4, "rgba(" + r + "," + g + "," + b + "," + (alpha * 0.4) + ")");
+  grd.addColorStop(1,   "rgba(" + r + "," + g + "," + b + ",0)");
+  ctx.fillStyle = grd;
+  ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+}
+
+// Film grain overlay — monochromatic, subtle
+function applyGrain(ctx, W, H, intensity) {
+  var id = ctx.getImageData(0, 0, W, H);
+  var d = id.data;
+  var inv = intensity * 255;
+  for (var i = 0; i < d.length; i += 16) { // every 4th pixel for perf
+    var n = (Math.random() - 0.5) * inv;
+    d[i] += n; d[i+1] += n; d[i+2] += n;
+  }
+  ctx.putImageData(id, 0, 0);
+}
+
+// Power-law random — most values small, few large
+function powerRand(exp) { return Math.pow(Math.random(), exp); }
+
+// Simple 2D noise approximation using sin
+function pseudoNoise(x, y, seed) {
+  return Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453 % 1;
+}
+
+// ─── Theme definitions ────────────────────────────────────────────────────
+
+var THEMES = [
+  { id: "galaxy",     label: "Galaxy",          desc: "Particle nebula with spiral arms",        emoji: "\u{1F30C}", renderer: "r3f" },
+  { id: "luckyballs", label: "Lucky Balls",     desc: "Lottery drum with physics collisions",     emoji: "\u{1F3B1}", renderer: "canvas" },
+  { id: "crystal",    label: "Crystal Oracle",  desc: "Mystical sphere of light",                 emoji: "\u{1F52E}", renderer: "r3f" },
+  { id: "cyber",      label: "Cyber",           desc: "Digital rain cascade",                     emoji: "\u2B1B",    renderer: "canvas" },
+  { id: "roulette",   label: "Name Roulette",   desc: "Slot-machine reel",                        emoji: "\u{1F3B0}", renderer: "canvas" },
+  { id: "envelope",   label: "Golden Envelope", desc: "Ceremonial red and gold",                  emoji: "\u2709\uFE0F", renderer: "canvas" },
+  { id: "fireworks",  label: "Fireworks",       desc: "Night sky particle bursts",                emoji: "\u{1F386}", renderer: "canvas" },
+  { id: "spotlight",  label: "Spotlight",       desc: "Theatrical stage lighting",                emoji: "\u{1F526}", renderer: "canvas" },
+];
+
+var NAMES = ["Alice W.", "Bob L.", "Charlie K.", "Diana M.", "Ethan R.", "Fiona T.", "George H.", "Hannah S.", "Ivan P.", "Julia N.", "Kevin C.", "Luna Z."];
+
+var renderers = {};
+
+// ── 1. GALAXY ─────────────────────────────────────────────────────────────
+// Premium: slow rotation, gaussian splats, multi-layer glow, atmospheric depth
+
+renderers.galaxy = (function() {
+  var particles = null;
+
+  function init(W) {
+    var N = 280;
+    particles = [];
+    for (var i = 0; i < N; i++) {
+      var frac = i / N;
+      var arm = i % 4;
+      var theta = frac * Math.PI * 8;
+      var r = 0.04 + frac * 0.42;
+      var angle = theta + (arm / 4) * Math.PI * 2;
+      var spread = (Math.sin(i * 7.13) * 0.5) * r * 0.3;
+      var spreadY = Math.cos(i * 3.71) * 0.015;
+      // Power-law size: most tiny, few larger
+      var size = (0.3 + powerRand(2.5) * 4) * W / 400;
+      // Depth: 0 (far, dim) to 1 (near, bright)
+      var depth = 0.3 + Math.random() * 0.7;
+
+      // Color: inner = warm white-blue, outer = cool desaturated purple
+      var warmth = Math.max(0, 1 - frac * 2.5);
+      var cr = Math.floor(130 + warmth * 125 + (1-frac) * 20);
+      var cg = Math.floor(120 + warmth * 135);
+      var cb = Math.floor(180 + warmth * 75);
+
+      particles.push({
+        baseFrac: frac, baseAngle: angle,
+        baseR: r, spreadX: spread, spreadY: spreadY,
+        size: size, depth: depth,
+        r: cr, g: cg, b: cb,
+        twinklePhase: Math.random() * Math.PI * 2,
+        twinkleSpeed: 0.8 + Math.random() * 1.2,
+      });
+    }
+  }
+
+  return function(ctx, W, H, t) {
+    if (!particles) init(W);
+
+    // Deep dark background with slight warm tint
+    ctx.fillStyle = "#06050e";
+    ctx.fillRect(0, 0, W, H);
+
+    var cx = W / 2, cy = H / 2;
+
+    // Central nebula glow — multi-layer
+    splat(ctx, cx, cy, W * 0.18, 80, 60, 140, 0.06);
+    splat(ctx, cx, cy, W * 0.10, 120, 100, 180, 0.08);
+    splat(ctx, cx * 1.03, cy * 0.97, W * 0.25, 50, 30, 100, 0.03);
+
+    // Slow rotation — 30s per full revolution
+    var rotSpeed = t * 0.21;
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      // Differential rotation: inner faster than outer
+      var speedMult = 1 + 0.4 / (p.baseFrac + 0.15);
+      var angle = p.baseAngle + rotSpeed * speedMult * 0.08;
+      var r = p.baseR * W;
+
+      var x = cx + Math.cos(angle) * r + p.spreadX * W;
+      var y = cy + Math.sin(angle) * r * 0.55 + p.spreadY * W;
+
+      // Twinkle — subtle, not flashy
+      var twinkle = 0.7 + 0.3 * Math.sin(t * p.twinkleSpeed + p.twinklePhase);
+
+      // Atmospheric depth: far particles are dimmer, more desaturated
+      var depthFade = p.depth * twinkle;
+      var alpha = (0.1 + depthFade * 0.55) * (p.baseFrac < 0.08 ? 0.9 : 1);
+
+      // Fog toward background color for distant particles
+      var fogAmt = (1 - p.depth) * 0.5;
+      var fr = Math.floor(lerp(p.r, 10, fogAmt));
+      var fg = Math.floor(lerp(p.g, 8, fogAmt));
+      var fb = Math.floor(lerp(p.b, 20, fogAmt));
+
+      // Gaussian splat instead of hard circle
+      splat(ctx, x, y, p.size * (0.8 + twinkle * 0.2), fr, fg, fb, alpha);
+
+      // White-hot core for the brightest inner stars
+      if (p.baseFrac < 0.06 && p.depth > 0.8) {
+        splat(ctx, x, y, p.size * 0.3, 255, 250, 255, alpha * 0.7);
+      }
+    }
+
+    applyGrain(ctx, W, H, 0.025);
+  };
+})();
+
+// ── 2. LUCKY BALLS ────────────────────────────────────────────────────────
+// Premium: glossy material simulation, soft shadows, glass drum
+
+renderers.luckyballs = (function() {
+  var COLORS = [
+    [200,60,60],[220,130,50],[200,180,50],[50,170,100],
+    [50,150,190],[90,90,220],[150,80,220],[210,70,150],
+    [180,60,70],[40,160,130],[60,120,200],[180,100,200],
+    [220,160,50],[80,200,180],[130,70,190],[200,90,110],
+    [100,180,80],[180,140,80]
+  ];
+  var balls = null;
+
+  function init(W) {
+    var dr = W * 0.30, br = W * 0.032;
+    var cxI = W/2, cyI = W/2;
+    balls = [];
+    for (var i = 0; i < 16; i++) {
+      var a = (i / 16) * Math.PI * 2;
+      var r = dr * 0.5 * Math.random();
+      var c = COLORS[i % COLORS.length];
+      balls.push({
+        x: cxI + Math.cos(a) * r, y: cyI + Math.sin(a) * r,
+        vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
+        r: br, cr: c[0], cg: c[1], cb: c[2],
+      });
+    }
+  }
+
+  return function(ctx, W, H, t) {
+    if (!balls) init(W);
+    var cx = W/2, cy = H/2, dr = W * 0.30;
+
+    ctx.fillStyle = "#08080e";
+    ctx.fillRect(0, 0, W, H);
+
+    // Physics
+    for (var i = 0; i < balls.length; i++) {
+      var b = balls[i];
+      b.vy += 0.08;
+      b.vx *= 0.997; b.vy *= 0.997;
+      b.vx += (Math.random() - 0.5) * 0.15;
+      b.vy += (Math.random() - 0.5) * 0.15;
+      b.x += b.vx; b.y += b.vy;
+
+      var dx = b.x - cx, dy = b.y - cy;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist + b.r > dr) {
+        var nx = dx / dist, ny = dy / dist;
+        b.x = cx + nx * (dr - b.r); b.y = cy + ny * (dr - b.r);
+        var dot = b.vx * nx + b.vy * ny;
+        b.vx -= 2 * dot * nx * 0.82; b.vy -= 2 * dot * ny * 0.82;
+      }
+    }
+
+    // Ball-ball collisions
+    for (var i = 0; i < balls.length; i++) {
+      for (var j = i + 1; j < balls.length; j++) {
+        var a = balls[i], b = balls[j];
+        var dx = b.x - a.x, dy = b.y - a.y;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if (d < a.r + b.r && d > 0) {
+          var nx = dx/d, ny = dy/d;
+          var dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+          if (dvn > 0) {
+            a.vx -= dvn * nx * 0.9; a.vy -= dvn * ny * 0.9;
+            b.vx += dvn * nx * 0.9; b.vy += dvn * ny * 0.9;
+          }
+          var ov = (a.r + b.r - d) / 2;
+          a.x -= nx * ov; a.y -= ny * ov;
+          b.x += nx * ov; b.y += ny * ov;
+        }
+      }
+    }
+
+    // Drum — subtle glass ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, dr, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.07)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Inner subtle glow
+    var drumGlow = ctx.createRadialGradient(cx, cy, dr * 0.85, cx, cy, dr);
+    drumGlow.addColorStop(0, "rgba(255,255,255,0)");
+    drumGlow.addColorStop(1, "rgba(255,255,255,0.015)");
+    ctx.fillStyle = drumGlow;
+    ctx.fill();
+
+    // Balls — premium glossy
+    for (var i = 0; i < balls.length; i++) {
+      var b = balls[i];
+      // Soft shadow underneath
+      splat(ctx, b.x + 1, b.y + 2, b.r * 1.4, 0, 0, 0, 0.2);
+
+      // Main ball gradient — desaturated for premium feel
+      var cr = Math.floor(b.cr * 0.85), cg = Math.floor(b.cg * 0.85), cb = Math.floor(b.cb * 0.85);
+      var grad = ctx.createRadialGradient(b.x - b.r * 0.25, b.y - b.r * 0.3, b.r * 0.05, b.x, b.y, b.r);
+      grad.addColorStop(0, "rgba(255,255,255,0.9)");
+      grad.addColorStop(0.15, "rgba(" + (cr+60) + "," + (cg+60) + "," + (cb+60) + ",0.95)");
+      grad.addColorStop(0.5, "rgba(" + cr + "," + cg + "," + cb + ",0.9)");
+      grad.addColorStop(1, "rgba(" + Math.floor(cr*0.3) + "," + Math.floor(cg*0.3) + "," + Math.floor(cb*0.3) + ",0.95)");
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Specular highlight — small sharp
+      var hlGrad = ctx.createRadialGradient(b.x - b.r * 0.22, b.y - b.r * 0.28, 0, b.x - b.r * 0.22, b.y - b.r * 0.28, b.r * 0.4);
+      hlGrad.addColorStop(0, "rgba(255,255,255,0.45)");
+      hlGrad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = hlGrad;
+      ctx.fill();
+    }
+
+    applyGrain(ctx, W, H, 0.02);
+  };
+})();
+
+// ── 3. CRYSTAL ORACLE ─────────────────────────────────────────────────────
+// Premium: slow rotation, fibonacci sphere with depth, atmospheric glow layers
+
+renderers.crystal = (function() {
+  var particles = null;
+  var ringParticles = null;
+
+  function init(W) {
+    var N = 220, phi = (1 + Math.sqrt(5)) / 2;
+    particles = [];
+    for (var i = 0; i < N; i++) {
+      var y3d = 1 - (i / (N - 1)) * 2;
+      var rAtY = Math.sqrt(1 - y3d * y3d);
+      var theta = 2 * Math.PI * i / phi;
+      particles.push({
+        y3d: y3d, rAtY: rAtY, theta: theta,
+        size: (0.4 + powerRand(2) * 3) * W / 400,
+        twinklePhase: Math.random() * Math.PI * 2,
+      });
+    }
+    ringParticles = [];
+    for (var i = 0; i < 40; i++) {
+      ringParticles.push({
+        angle: (i / 40) * Math.PI * 2,
+        size: 0.8 + Math.random() * 1.2,
+        alphaPhase: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  return function(ctx, W, H, t) {
+    if (!particles) init(W);
+
+    ctx.fillStyle = "#050510";
+    ctx.fillRect(0, 0, W, H);
+    var cx = W/2, cy = H/2;
+    var sphereR = W * 0.20;
+
+    // Ambient glow layers — desaturated
+    splat(ctx, cx, cy, W * 0.28, 60, 30, 120, 0.04);
+    splat(ctx, cx, cy, W * 0.15, 80, 50, 160, 0.06);
+    splat(ctx, cx * 0.97, cy * 1.02, W * 0.22, 40, 20, 100, 0.03);
+
+    // Slow rotation — ~25s full revolution
+    var rot = t * 0.25;
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      var x3d = Math.cos(p.theta + rot) * p.rAtY;
+      var z3d = Math.sin(p.theta + rot) * p.rAtY;
+
+      var persp = 1 / (1 - z3d * 0.25);
+      var x = cx + x3d * sphereR * persp;
+      var y = cy + p.y3d * sphereR * persp * 0.9;
+
+      var depth = (z3d + 1) / 2;
+      var twinkle = 0.75 + 0.25 * Math.sin(t * 1.5 + p.twinklePhase);
+
+      // Atmospheric depth
+      var alpha = (0.08 + depth * 0.45) * twinkle;
+      var fogAmt = (1 - depth) * 0.6;
+
+      // Cyan to purple gradient, desaturated
+      var hueShift = p.y3d * 30;
+      var cr = Math.floor(lerp(100 + hueShift, 8, fogAmt));
+      var cg = Math.floor(lerp(140 + hueShift * 0.5, 8, fogAmt));
+      var cb = Math.floor(lerp(200 - hueShift * 0.3, 16, fogAmt));
+
+      splat(ctx, x, y, p.size * persp * (0.9 + twinkle * 0.1), cr, cg, cb, alpha);
+
+      // White core for front-facing particles
+      if (depth > 0.75 && p.size > 1.5) {
+        splat(ctx, x, y, p.size * persp * 0.25, 220, 230, 255, alpha * 0.5);
+      }
+    }
+
+    // Ring — very subtle
+    var ringR = W * 0.28;
+    for (var i = 0; i < ringParticles.length; i++) {
+      var rp = ringParticles[i];
+      var a = rp.angle - t * 0.15;
+      var rx = cx + Math.cos(a) * ringR;
+      var ry = cy + Math.sin(a) * ringR * 0.25;
+      var ra = 0.15 + 0.15 * Math.sin(t * 1.2 + rp.alphaPhase);
+      splat(ctx, rx, ry, rp.size * W / 350, 120, 60, 200, ra);
+    }
+
+    applyGrain(ctx, W, H, 0.025);
+  };
+})();
+
+// ── 4. CYBER ──────────────────────────────────────────────────────────────
+// Premium: slower rain, desaturated green, depth layers, CRT glow
+
+renderers.cyber = (function() {
+  var CHARS = "\u30A2\u30A4\u30A6\u30A8\u30AA\u30AB\u30AD\u30AF\u30B1\u30B3\u30B5\u30B7\u30B9\u30BB\u30BD\u30BF\u30C1\u30C4\u30C6\u30C80123456789ABCDEF";
+  var columns = null;
+
+  function init(W) {
+    var colW = 20;
+    var n = Math.floor(W / colW);
+    columns = [];
+    for (var i = 0; i < n; i++) {
+      // 3 depth layers
+      var depth = Math.random();
+      columns.push({
+        x: i * colW + colW / 2,
+        y: -Math.random() * 600,
+        speed: 0.6 + depth * 1.4,
+        chars: Array.from({length: 18}, function() { return CHARS[Math.floor(Math.random() * CHARS.length)]; }),
+        brightness: 0.3 + depth * 0.5,
+        depth: depth,
+        fontSize: Math.floor(11 + depth * 4),
+      });
+    }
+  }
+
+  return function(ctx, W, H, t) {
+    if (!columns) init(W);
+
+    // Soft trail — slower fade for depth
+    ctx.fillStyle = "rgba(2, 4, 2, 0.08)";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Sort by depth — render far columns first
+    var sorted = columns.slice().sort(function(a, b) { return a.depth - b.depth; });
+
+    for (var ci = 0; ci < sorted.length; ci++) {
+      var col = sorted[ci];
+      col.y += col.speed;
+      if (col.y > H + 400) {
+        col.y = -Math.random() * 400;
+        col.speed = 0.6 + col.depth * 1.4;
+      }
+
+      if (Math.random() < 0.02) {
+        var idx = Math.floor(Math.random() * col.chars.length);
+        col.chars[idx] = CHARS[Math.floor(Math.random() * CHARS.length)];
+      }
+
+      ctx.font = col.fontSize + "px monospace";
+
+      for (var j = 0; j < col.chars.length; j++) {
+        var charY = col.y - j * 20;
+        if (charY < -20 || charY > H + 20) continue;
+
+        var isHead = j === 0;
+        var fade = j / col.chars.length;
+
+        // Desaturated green — not neon
+        if (isHead) {
+          ctx.fillStyle = "rgba(160, 220, 170, " + (col.brightness * 0.8) + ")";
+        } else {
+          // Far columns dimmer and more blue-shifted
+          var g = Math.floor(180 * (1 - fade) * col.brightness);
+          var rb = Math.floor(g * (0.15 + (1 - col.depth) * 0.15));
+          ctx.fillStyle = "rgba(" + rb + ", " + g + ", " + Math.floor(rb * 1.3) + ", " + ((1 - fade) * col.brightness * 0.7) + ")";
+        }
+        ctx.fillText(col.chars[j], col.x, charY);
+      }
+    }
+
+    // Subtle scanlines
+    ctx.fillStyle = "rgba(0,0,0,0.03)";
+    for (var y = 0; y < H; y += 2) {
+      ctx.fillRect(0, y, W, 1);
+    }
+
+    // No film grain for cyber — scanlines are the texture
+  };
+})();
+
+// ── 5. ROULETTE ───────────────────────────────────────────────────────────
+// Premium: clean typography, subtle gold, minimal chrome
+
+renderers.roulette = (function() {
+  var ROW_H = 54;
+  var scrollY = 0;
+
+  return function(ctx, W, H, t) {
+    ctx.fillStyle = "#08080c";
+    ctx.fillRect(0, 0, W, H);
+
+    scrollY += 0.5;
+    var cx = W / 2, windowY = H / 2;
+    var reelW = W * 0.68, reelX = (W - reelW) / 2;
+
+    // Subtle reel bg
+    ctx.fillStyle = "rgba(255,255,255,0.012)";
+    ctx.fillRect(reelX, 0, reelW, H);
+
+    var total = NAMES.length;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    for (var offset = -5; offset <= 5; offset++) {
+      var rawIdx = Math.floor(scrollY / ROW_H) + offset;
+      var idx = ((rawIdx % total) + total) % total;
+      var nameY = windowY + offset * ROW_H - (scrollY % ROW_H);
+
+      var distFromCenter = Math.abs(nameY - windowY);
+      var maxDist = ROW_H * 3.5;
+      var alpha = Math.max(0, 1 - distFromCenter / maxDist);
+      alpha = alpha * alpha; // Ease falloff
+
+      var isCenter = distFromCenter < ROW_H * 0.4;
+      ctx.font = (isCenter ? "600 " : "400 ") + "18px 'Inter', sans-serif";
+      ctx.fillStyle = "rgba(255, 255, 255, " + (alpha * 0.7) + ")";
+      ctx.fillText(NAMES[idx], cx, nameY);
+    }
+
+    // Selection window — refined gold
+    var winHalf = ROW_H / 2 + 3;
+    ctx.strokeStyle = "rgba(200, 170, 80, 0.25)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(reelX - 2, windowY - winHalf, reelW + 4, winHalf * 2);
+
+    // Corner marks
+    var tickLen = 10;
+    ctx.strokeStyle = "rgba(200, 170, 80, 0.4)";
+    ctx.lineWidth = 1.5;
+    var corners = [
+      [reelX - 4, windowY - winHalf - 1],
+      [reelX + reelW + 4, windowY - winHalf - 1],
+      [reelX - 4, windowY + winHalf + 1],
+      [reelX + reelW + 4, windowY + winHalf + 1],
+    ];
+    for (var ci = 0; ci < corners.length; ci++) {
+      var c = corners[ci];
+      var sx = c[0] < cx ? 1 : -1;
+      var sy = c[1] < windowY ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(c[0], c[1] + sy * tickLen);
+      ctx.lineTo(c[0], c[1]);
+      ctx.lineTo(c[0] + sx * tickLen, c[1]);
+      ctx.stroke();
+    }
+
+    // Fade edges — smooth
+    var fadeH = ROW_H * 2.5;
+    var topFade = ctx.createLinearGradient(0, 0, 0, fadeH);
+    topFade.addColorStop(0, "#08080c");
+    topFade.addColorStop(1, "rgba(8,8,12,0)");
+    ctx.fillStyle = topFade;
+    ctx.fillRect(0, 0, W, fadeH);
+
+    var botFade = ctx.createLinearGradient(0, H - fadeH, 0, H);
+    botFade.addColorStop(0, "rgba(8,8,12,0)");
+    botFade.addColorStop(1, "#08080c");
+    ctx.fillStyle = botFade;
+    ctx.fillRect(0, H - fadeH, W, fadeH);
+
+    applyGrain(ctx, W, H, 0.018);
+  };
+})();
+
+// ── 6. GOLDEN ENVELOPE ────────────────────────────────────────────────────
+// Premium: warm color palette, gold foil shimmer, restrained particle orbits
+
+renderers.envelope = function(ctx, W, H, t) {
+  ctx.fillStyle = "#0a0706";
+  ctx.fillRect(0, 0, W, H);
+  var cx = W/2, cy = H/2;
+  var envW = W * 0.48, envH = W * 0.32;
+  var envX = cx - envW/2, envY = cy - envH/2;
+
+  // Warm ambient glow
+  splat(ctx, cx, cy, envW * 0.9, 80, 50, 15, 0.03);
+  splat(ctx, cx, cy, envW * 0.5, 100, 70, 20, 0.04);
+
+  // Orbit particles — slow, small, desaturated gold
+  for (var i = 0; i < 6; i++) {
+    var a = (i / 6) * Math.PI * 2 + t * 0.2;
+    var ox = cx + Math.cos(a) * envW * 0.6;
+    var oy = cy + Math.sin(a) * envH * 0.7;
+    var oa = 0.15 + 0.1 * Math.sin(t * 0.8 + i * 1.3);
+    splat(ctx, ox, oy, 4, 180, 140, 60, oa);
+  }
+
+  // Envelope body
+  var r = 6;
+  ctx.beginPath();
+  ctx.roundRect(envX, envY, envW, envH, r);
+  ctx.fillStyle = "#5a1212";
+  ctx.fill();
+
+  // Diagonal lining — very subtle
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(envX, envY, envW, envH, r);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(90, 18, 18, 0.5)";
+  ctx.lineWidth = 0.5;
+  for (var d = -envW; d < envW + envH; d += 14) {
+    ctx.beginPath();
+    ctx.moveTo(envX + d, envY);
+    ctx.lineTo(envX + d - envH, envY + envH);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Gold border — thin, refined
+  ctx.beginPath();
+  ctx.roundRect(envX, envY, envW, envH, r);
+  ctx.strokeStyle = "rgba(180, 140, 50, 0.5)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Inner gold line
+  ctx.beginPath();
+  ctx.roundRect(envX + 5, envY + 5, envW - 10, envH - 10, r - 1);
+  ctx.strokeStyle = "rgba(180, 140, 50, 0.15)";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Flap
+  ctx.beginPath();
+  ctx.moveTo(envX, envY);
+  ctx.lineTo(cx, envY - envH * 0.32);
+  ctx.lineTo(envX + envW, envY);
+  ctx.closePath();
+  ctx.fillStyle = "#4e0f0f";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(180, 140, 50, 0.4)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Wax seal — refined
+  var sealR = W * 0.04;
+  var sealX = cx, sealY = envY + envH * 0.5;
+  var sealGrad = ctx.createRadialGradient(sealX, sealY, 0, sealX, sealY, sealR);
+  sealGrad.addColorStop(0, "#c04525");
+  sealGrad.addColorStop(0.6, "#8a2510");
+  sealGrad.addColorStop(1, "#501508");
+  ctx.beginPath();
+  ctx.arc(sealX, sealY, sealR, 0, Math.PI * 2);
+  ctx.fillStyle = sealGrad;
+  ctx.fill();
+
+  // Seal star — slow rotation
+  ctx.save();
+  ctx.translate(sealX, sealY);
+  ctx.rotate(t * 0.1);
+  ctx.beginPath();
+  for (var i = 0; i < 12; i++) {
+    var sa = (i / 12) * Math.PI * 2;
+    var sr = i % 2 === 0 ? sealR * 0.5 : sealR * 0.28;
+    if (i === 0) ctx.moveTo(Math.cos(sa) * sr, Math.sin(sa) * sr);
+    else ctx.lineTo(Math.cos(sa) * sr, Math.sin(sa) * sr);
+  }
+  ctx.closePath();
+  ctx.fillStyle = "rgba(200,160,80,0.15)";
+  ctx.fill();
+  ctx.restore();
+
+  // Seal specular
+  var shlGrad = ctx.createRadialGradient(sealX - sealR * 0.2, sealY - sealR * 0.25, 0, sealX, sealY, sealR);
+  shlGrad.addColorStop(0, "rgba(255,255,255,0.12)");
+  shlGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.beginPath();
+  ctx.arc(sealX, sealY, sealR, 0, Math.PI * 2);
+  ctx.fillStyle = shlGrad;
+  ctx.fill();
+
+  applyGrain(ctx, W, H, 0.022);
+};
+
+// ── 7. FIREWORKS ──────────────────────────────────────────────────────────
+// Premium: gaussian splat sparks, motion trails, atmospheric night sky
+
+renderers.fireworks = (function() {
+  var FW_COLORS = [[255,80,80],[255,160,80],[255,220,100],[80,200,140],[80,180,240],[140,80,255],[255,80,200],[255,240,220]];
+  var sparks = [], rockets = [], stars = [], buildings = [];
+  var inited = false;
+
+  return function(ctx, W, H, t) {
+    if (!inited) {
+      inited = true;
+      for (var i = 0; i < 80; i++) {
+        stars.push({
+          x: Math.random() * W, y: Math.random() * H * 0.75,
+          size: powerRand(2.5) * 2 + 0.3,
+          twOff: Math.random() * 10, twSpd: 0.5 + Math.random() * 1,
+        });
+      }
+      for (var i = 0; i < 12; i++) {
+        buildings.push({
+          x: (i / 12) * W - 8,
+          w: 20 + Math.random() * 35,
+          h: 30 + Math.random() * 65,
+        });
+      }
+    }
+
+    // Night sky gradient — deep, not pure black
+    var skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, "#04060e");
+    skyGrad.addColorStop(0.7, "#06081a");
+    skyGrad.addColorStop(1, "#0a0c18");
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars — gaussian splats, slow twinkle
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      var tw = 0.5 + 0.5 * Math.sin(t * s.twSpd + s.twOff);
+      splat(ctx, s.x, s.y, s.size * (0.8 + tw * 0.2), 220, 225, 240, 0.2 + tw * 0.4);
+    }
+
+    // Skyline silhouette
+    for (var i = 0; i < buildings.length; i++) {
+      var b = buildings[i];
+      ctx.fillStyle = "#060810";
+      ctx.fillRect(b.x, H - b.h, b.w, b.h);
+      // Dim warm windows
+      for (var wy = H - b.h + 6; wy < H - 3; wy += 10) {
+        for (var wx = b.x + 3; wx < b.x + b.w - 3; wx += 7) {
+          if (Math.random() < 0.25) {
+            ctx.fillStyle = "rgba(255,200,120,0.06)";
+            ctx.fillRect(wx, wy, 2, 4);
+          }
+        }
+      }
+    }
+
+    // Launch rockets
+    if (Math.random() < 0.015) {
+      var c = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+      rockets.push({
+        x: W * 0.2 + Math.random() * W * 0.6, y: H - 50,
+        vx: (Math.random() - 0.5) * 1.2, vy: -(3.5 + Math.random() * 2.5),
+        cr: c[0], cg: c[1], cb: c[2], exploded: false,
+      });
+    }
+
+    for (var i = 0; i < rockets.length; i++) {
+      var r = rockets[i];
+      if (r.exploded) continue;
+      var prevX = r.x, prevY = r.y;
+      r.x += r.vx; r.y += r.vy; r.vy += 0.022;
+
+      // Motion trail
+      var trailGrad = ctx.createLinearGradient(prevX, prevY, r.x, r.y);
+      trailGrad.addColorStop(0, "rgba(" + r.cr + "," + r.cg + "," + r.cb + ",0)");
+      trailGrad.addColorStop(1, "rgba(" + r.cr + "," + r.cg + "," + r.cb + ",0.5)");
+      ctx.strokeStyle = trailGrad;
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(prevX, prevY);
+      ctx.lineTo(r.x, r.y);
+      ctx.stroke();
+
+      if (r.vy >= 0) {
+        r.exploded = true;
+        var n = 25 + Math.floor(Math.random() * 20);
+        for (var j = 0; j < n; j++) {
+          var a = (j / n) * Math.PI * 2;
+          var spd = 1 + Math.random() * 2.5;
+          sparks.push({
+            x: r.x, y: r.y, prevX: r.x, prevY: r.y,
+            vx: Math.cos(a) * spd + (Math.random() - 0.5) * 0.5,
+            vy: Math.sin(a) * spd + (Math.random() - 0.5) * 0.5,
+            life: 1, cr: r.cr, cg: r.cg, cb: r.cb,
+            size: powerRand(2) * 3 + 0.5,
+          });
+        }
+      }
+    }
+
+    // Sparks — motion trails + gaussian splats
+    for (var i = 0; i < sparks.length; i++) {
+      var s = sparks[i];
+      s.prevX = s.x; s.prevY = s.y;
+      s.x += s.vx; s.y += s.vy;
+      s.vy += 0.025; s.vx *= 0.98; s.vy *= 0.98;
+      s.life -= 0.01;
+
+      if (s.life > 0) {
+        // Trail line
+        var sAlpha = s.life * s.life * 0.5;
+        var sGrad = ctx.createLinearGradient(s.prevX, s.prevY, s.x, s.y);
+        sGrad.addColorStop(0, "rgba(" + s.cr + "," + s.cg + "," + s.cb + ",0)");
+        sGrad.addColorStop(1, "rgba(" + s.cr + "," + s.cg + "," + s.cb + "," + sAlpha + ")");
+        ctx.strokeStyle = sGrad;
+        ctx.lineWidth = s.size * s.life * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(s.prevX, s.prevY);
+        ctx.lineTo(s.x, s.y);
+        ctx.stroke();
+
+        // Splat at head
+        splat(ctx, s.x, s.y, s.size * s.life * 1.5, s.cr, s.cg, s.cb, sAlpha * 0.8);
+      }
+    }
+
+    rockets = rockets.filter(function(r) { return !r.exploded || r.y < H; });
+    sparks = sparks.filter(function(s) { return s.life > 0; });
+
+    applyGrain(ctx, W, H, 0.02);
+  };
+})();
+
+// ── 8. SPOTLIGHT ──────────────────────────────────────────────────────────
+// Premium: volumetric cone light, slow sweeping, warm desaturated tones
+
+renderers.spotlight = (function() {
+  var spots = null, nameNodes = null;
+
+  return function(ctx, W, H, t) {
+    if (!spots) {
+      spots = [
+        { x: W * 0.3, y: H * 0.35, tx: W * 0.7, ty: H * 0.55, r: W * 0.18 },
+        { x: W * 0.7, y: H * 0.45, tx: W * 0.25, ty: H * 0.35, r: W * 0.15 },
+        { x: W * 0.5, y: H * 0.65, tx: W * 0.55, ty: H * 0.45, r: W * 0.16 },
+      ];
+      nameNodes = NAMES.map(function(n, i) {
+        return {
+          name: n,
+          x: W * 0.14 + (i % 4) * W * 0.21 + Math.random() * W * 0.06,
+          y: H * 0.18 + Math.floor(i / 4) * H * 0.22 + Math.random() * H * 0.06,
+        };
+      });
+    }
+
+    // Dark warm stage
+    ctx.fillStyle = "#050506";
+    ctx.fillRect(0, 0, W, H);
+
+    // Slow spotlight movement
+    for (var si = 0; si < spots.length; si++) {
+      var s = spots[si];
+      var dx = s.tx - s.x, dy = s.ty - s.y;
+      var d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 4) {
+        s.tx = W * 0.12 + Math.random() * W * 0.76;
+        s.ty = H * 0.12 + Math.random() * H * 0.76;
+      } else {
+        // Smooth interpolation — premium slow sweep
+        s.x += dx * 0.008;
+        s.y += dy * 0.008;
+      }
+
+      // Multi-layer volumetric glow — white core fading to warm
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+
+      // Outer atmospheric
+      splat(ctx, s.x, s.y, s.r * 1.3, 40, 35, 25, 0.03);
+      // Mid warm
+      splat(ctx, s.x, s.y, s.r, 80, 70, 50, 0.05);
+      // Inner bright
+      splat(ctx, s.x, s.y, s.r * 0.5, 140, 130, 110, 0.06);
+      // Core
+      splat(ctx, s.x, s.y, s.r * 0.15, 200, 195, 180, 0.08);
+
+      ctx.restore();
+    }
+
+    // Name nodes — lit by proximity
+    for (var ni = 0; ni < nameNodes.length; ni++) {
+      var node = nameNodes[ni];
+      var maxLit = 0.04;
+      for (var si = 0; si < spots.length; si++) {
+        var s = spots[si];
+        var dx = node.x - s.x, dy = node.y - s.y;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if (d < s.r) {
+          var lit = 0.3 * (1 - d / s.r);
+          lit = lit * lit; // Quadratic falloff
+          maxLit = Math.max(maxLit, lit);
+        }
+      }
+
+      ctx.font = "12px 'Inter', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(230, 225, 210, " + maxLit + ")";
+      ctx.fillText(node.name, node.x, node.y);
+    }
+
+    // Subtle floor line
+    ctx.strokeStyle = "rgba(255,255,255,0.02)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.86);
+    ctx.lineTo(W, H * 0.86);
+    ctx.stroke();
+
+    applyGrain(ctx, W, H, 0.028);
+  };
+})();
+
+// ── Build grid ────────────────────────────────────────────────────────────
+
+var grid = document.getElementById("grid");
+var canvases = [];
+
+for (var ti = 0; ti < THEMES.length; ti++) {
+  var theme = THEMES[ti];
+  var card = document.createElement("div");
+  card.className = "card";
+
+  var canvasWrap = document.createElement("div");
+  canvasWrap.className = "canvas-wrap";
+
+  var canvas = document.createElement("canvas");
+  canvas.width = 400;
+  canvas.height = 400;
+  canvasWrap.appendChild(canvas);
+  card.appendChild(canvasWrap);
+
+  var info = document.createElement("div");
+  info.className = "card-info";
+
+  var emojiSpan = document.createElement("span");
+  emojiSpan.className = "emoji";
+  emojiSpan.textContent = theme.emoji;
+  info.appendChild(emojiSpan);
+
+  var textSpan = document.createElement("span");
+  textSpan.className = "text";
+
+  var labelEl = document.createElement("h3");
+  labelEl.className = "label";
+  labelEl.textContent = theme.label;
+  textSpan.appendChild(labelEl);
+
+  var descEl = document.createElement("p");
+  descEl.className = "desc";
+  descEl.textContent = theme.desc;
+  textSpan.appendChild(descEl);
+
+  info.appendChild(textSpan);
+
+  var badge = document.createElement("span");
+  badge.className = "badge badge-" + theme.renderer;
+  badge.textContent = theme.renderer === "r3f" ? "WebGL" : "Canvas 2D";
+  info.appendChild(badge);
+
+  card.appendChild(info);
+
+  (function(id) {
+    card.addEventListener("click", function() { openFullscreen(id); });
+  })(theme.id);
+
+  grid.appendChild(card);
+  canvases.push({ canvas: canvas, id: theme.id });
+}
+
+// ── Animation loop ────────────────────────────────────────────────────────
+
+var startTime = performance.now();
+
+function animate() {
+  var t = (performance.now() - startTime) / 1000;
+
+  for (var i = 0; i < canvases.length; i++) {
+    var entry = canvases[i];
+    var cvs = entry.canvas;
+    var ctx = cvs.getContext("2d");
+    if (renderers[entry.id]) {
+      renderers[entry.id](ctx, cvs.width, cvs.height, t);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ── Fullscreen ────────────────────────────────────────────────────────────
+
+var overlay = document.getElementById("overlay");
+var bigCanvas = document.getElementById("bigCanvas");
+var fullscreenTheme = null;
+var fullscreenRaf = null;
+
+function openFullscreen(themeId) {
+  fullscreenTheme = themeId;
+  overlay.classList.add("active");
+
+  function renderBig() {
+    var ctx = bigCanvas.getContext("2d");
+    var t = (performance.now() - startTime) / 1000;
+    if (renderers[fullscreenTheme]) {
+      renderers[fullscreenTheme](ctx, bigCanvas.width, bigCanvas.height, t);
+    }
+    fullscreenRaf = requestAnimationFrame(renderBig);
+  }
+  renderBig();
+}
+
+function closeFullscreen() {
+  overlay.classList.remove("active");
+  fullscreenTheme = null;
+  if (fullscreenRaf) cancelAnimationFrame(fullscreenRaf);
+}
+
+overlay.addEventListener("click", closeFullscreen);
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") closeFullscreen();
+});
+</script>
+</body>
+</html>

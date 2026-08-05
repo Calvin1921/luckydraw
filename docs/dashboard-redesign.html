@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Draw — Dashboard Redesign v2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  v2 CHANGES (from design review):
+  - Typography: DM Sans 800 for display, Inter for body — more weight contrast
+  - Empty state: product personality, animated particles, value proposition
+  - Event cards: richer — date prominent, second info line
+  - Color swatches: 56px with live mini-preview
+  - Participants: avatar initials, no redundant "Eligible" tags
+  - Prizes: draw mode is selectable dropdown, not just a badge
+  - Sidebar: "Customize" → "Configure"
+  - Signature: animated floating dots in launch zone (lucky draw vibe)
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --base:#0a0a0f;--surface:#111118;--overlay:#1a1a24;
+  --border:rgba(255,255,255,0.06);--border-h:rgba(255,255,255,0.10);
+  --t1:#fff;--t2:rgba(255,255,255,0.50);--t3:rgba(255,255,255,0.30);
+  --accent:#6366f1;--accent-dim:rgba(99,102,241,0.15);
+  --green:#22c55e;--amber:#f59e0b;--red:#ef4444;--slate:#64748b;
+  --r:10px;--r-lg:14px;
+  --font-display:'DM Sans',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+body{font-family:var(--font-body);background:var(--base);color:var(--t1);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+.screen-nav{position:fixed;top:0;left:0;right:0;z-index:200;background:#08080d;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:2px;padding:6px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.screen-nav button{padding:5px 12px;border:none;background:transparent;color:var(--t3);font-size:11px;font-weight:500;border-radius:6px;cursor:pointer;font-family:var(--font-body);white-space:nowrap;transition:all .15s}
+.screen-nav button.active{background:var(--accent);color:#fff}
+.screen-nav button:hover:not(.active){color:var(--t2);background:var(--overlay)}
+.screen-nav .sep{width:1px;height:16px;background:var(--border);margin:0 4px;flex-shrink:0}
+.view{display:none;padding-top:40px}.view.active{display:block}
+.nav{height:52px;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--border);position:sticky;top:40px;background:var(--base);z-index:50}
+.nav-brand{font-family:var(--font-display);font-size:15px;font-weight:800;letter-spacing:-0.03em}
+.nav-spacer{flex:1}
+.nav-avatar{width:28px;height:28px;border-radius:50%;background:var(--overlay);border:1px solid var(--border)}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t2);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-body);transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--border-h);color:var(--t1)}
+.btn svg{width:15px;height:15px}
+.btn-p{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn-p:hover{opacity:.85;border-color:var(--accent)}
+.h-display{font-family:var(--font-display);font-weight:800;letter-spacing:-0.03em}
+.ev-c{max-width:760px;margin:0 auto;padding:32px 24px}
+.ev-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.ev-title{font-size:26px}
+.quick-stats{display:flex;gap:20px;margin-bottom:20px;padding:12px 0;border-bottom:1px solid var(--border)}
+.qs-item{font-size:12px;color:var(--t3);display:flex;align-items:center;gap:6px}
+.qs-num{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--t1);font-variant-numeric:tabular-nums}
+.filter-bar{display:flex;gap:6px;margin-bottom:16px}
+.chip{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);transition:all .15s}
+.chip.on{background:var(--accent-dim);color:var(--accent);border-color:rgba(99,102,241,0.25)}
+.ecard{display:flex;align-items:stretch;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:all .15s;overflow:hidden}
+.ecard:hover{border-color:var(--border-h);background:#13131c}
+.ecard-bar{width:3px;flex-shrink:0;border-radius:3px 0 0 3px}
+.ecard-bar.draft{background:var(--amber)}.ecard-bar.ready{background:var(--green)}.ecard-bar.done{background:var(--slate)}
+.ecard-body{flex:1;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.ring{width:40px;height:40px;flex-shrink:0;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring-bg{stroke:rgba(255,255,255,0.06);fill:none;stroke-width:3}
+.ring-f{fill:none;stroke-width:3;stroke-linecap:round}
+.ring-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--t2)}
+.ecard-info{flex:1;min-width:0}
+.ecard-name{font-family:var(--font-display);font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.01em}
+.ecard-zh{font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.ecard-date{font-size:11px;color:var(--t3);margin-top:4px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:12px}
+.ecard-date span{display:flex;align-items:center;gap:4px}
+.ecard-date svg{width:12px;height:12px;opacity:.4}
+.badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:4px;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.badge.draft{background:rgba(245,158,11,0.12);color:#f59e0b}
+.badge.ready{background:rgba(34,197,94,0.12);color:#22c55e}
+.badge.done{background:rgba(100,116,139,0.12);color:#94a3b8}
+.dl{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 92px)}
+.dl-side{border-right:1px solid var(--border);padding:20px 12px}
+.side-back{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);cursor:pointer;padding:6px 8px;border-radius:6px;margin-bottom:20px;transition:all .15s}
+.side-back:hover{color:var(--t2);background:var(--overlay)}
+.side-back svg{width:14px;height:14px}
+.side-sec{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);padding:0 8px;margin-bottom:6px;margin-top:20px}
+.side-sec:first-of-type{margin-top:0}
+.side-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--t2);transition:all .12s;margin-bottom:1px}
+.side-item:hover{color:var(--t1);background:var(--overlay)}
+.side-item.on{color:var(--t1);background:var(--accent-dim)}
+.side-item svg{width:16px;height:16px;opacity:.55}
+.side-item.on svg{opacity:.85}
+.side-cnt{margin-left:auto;font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums}
+.dl-main{padding:28px 32px;max-width:900px}
+.dh{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px}
+.dh-title{font-size:26px}
+.dh-sub{font-size:13px;color:var(--t3);margin-top:3px}
+.dh-actions{display:flex;gap:8px;align-items:center}
+.sec-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:12px}
+.launch{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px;margin-bottom:24px;position:relative;overflow:hidden}
+.launch::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.4),transparent)}
+.launch-dots{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.launch-dot{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:0;animation:float-dot 4s ease-in-out infinite}
+@keyframes float-dot{0%{opacity:0;transform:translateY(10px)}20%{opacity:.25}80%{opacity:.15}100%{opacity:0;transform:translateY(-60px)}}
+.launch-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:16px;position:relative;z-index:1}
+.launch-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:relative;z-index:1}
+.btn-launch{padding:14px 32px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-family:var(--font-display);font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px;letter-spacing:-0.01em;box-shadow:0 0 30px rgba(99,102,241,0.25)}
+.btn-launch:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 0 40px rgba(99,102,241,0.35)}
+.btn-launch svg{width:18px;height:18px}
+.launch-links{display:flex;gap:8px;flex-wrap:wrap}
+.launch-tip{font-size:11px;color:var(--t3);margin-top:16px;position:relative;z-index:1;display:flex;align-items:center;gap:6px}
+.launch-tip svg{width:13px;height:13px;opacity:.4}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px}
+.mc-label{font-size:11px;color:var(--t3);font-weight:500;margin-bottom:6px}
+.mc-val{font-family:var(--font-display);font-size:28px;font-weight:800;letter-spacing:-0.04em;font-variant-numeric:tabular-nums}
+.mc-sub{font-size:11px;color:var(--t3);margin-top:2px;font-variant-numeric:tabular-nums}
+.slist{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:24px}
+.sitem{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.sitem:last-child{border-bottom:none}
+.sitem:hover{background:rgba(255,255,255,0.015)}
+.scheck{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.scheck.ok{background:rgba(34,197,94,0.15)}.scheck.ok svg{color:#22c55e}
+.scheck.no{border:1.5px solid rgba(255,255,255,0.15)}
+.sitem-label{font-size:13px;font-weight:500;flex:1}
+.sitem-val{font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums}
+.sitem-chev{color:var(--t3)}.sitem-chev svg{width:14px;height:14px}
+.tbl{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;border-collapse:collapse}
+.tbl th{text-align:left;padding:10px 16px;font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px 16px;font-size:13px;border-bottom:1px solid var(--border)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,0.015)}
+.tier-badge{font-size:11px;color:var(--t3);background:var(--overlay);padding:2px 8px;border-radius:4px;display:inline-block}
+.p-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.p-search{flex:1;min-width:180px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--t1);font-size:13px;font-family:var(--font-body);outline:none;transition:border-color .15s}
+.p-search:focus{border-color:var(--accent)}.p-search::placeholder{color:var(--t3)}
+.p-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.p-row:last-child{border-bottom:none}
+.p-row:hover{background:rgba(255,255,255,0.015)}
+.p-num{font-size:11px;color:var(--t3);width:28px;text-align:right;font-variant-numeric:tabular-nums}
+.p-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+.p-name{font-weight:500;flex:1}.p-zh{color:var(--t2);font-size:12px}
+.p-won{font-size:10px;padding:2px 6px;border-radius:3px;background:rgba(99,102,241,0.12);color:#818cf8}
+.p-del{width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;opacity:0}
+.p-row:hover .p-del{opacity:1}
+.p-del:hover{background:rgba(239,68,68,0.1);color:#f87171}
+.p-del svg{width:14px;height:14px}
+.p-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;font-size:12px;color:var(--t3)}
+.tier{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.tier-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.tier-num{width:24px;height:24px;border-radius:6px;background:var(--accent-dim);color:var(--accent);font-family:var(--font-display);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tier-name{font-family:var(--font-display);font-size:15px;font-weight:700;flex:1}
+.tier-info{font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums}
+.tier-mode-select{font-size:12px;padding:4px 10px;border-radius:6px;background:var(--overlay);border:1px solid var(--border);color:var(--t2);font-family:var(--font-body);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff50' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px}
+.tier-mode-select:hover{border-color:var(--border-h);color:var(--t1)}
+.prize-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.prize-row:last-child{border-bottom:none}
+.prize-icon{width:16px;height:16px;color:var(--accent);opacity:.6;flex-shrink:0}
+.prize-name{flex:1;font-weight:500}
+.prize-val{font-size:12px;color:var(--t2);font-variant-numeric:tabular-nums}
+.prize-status{font-size:10px;padding:2px 6px;border-radius:3px}
+.prize-status.pending{background:var(--overlay);color:var(--t3)}
+.ap-section{margin-bottom:32px}
+.ap-label{font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:6px}
+.ap-desc{font-size:12px;color:var(--t3);margin-bottom:14px}
+.color-grid{display:flex;gap:10px;flex-wrap:wrap}
+.color-swatch{width:56px;height:56px;border-radius:12px;cursor:pointer;border:3px solid transparent;transition:all .15s}
+.color-swatch.on{border-color:#fff;transform:scale(1.08)}
+.color-swatch:hover{transform:scale(1.04)}
+.color-preview{margin-top:14px;padding:12px 16px;border-radius:8px;display:flex;align-items:center;gap:12px;transition:all .3s}
+.color-preview-dot{width:12px;height:12px;border-radius:50%;transition:all .3s}
+.color-preview-text{font-size:13px;color:var(--t2)}
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.theme-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;cursor:pointer;transition:all .15s}
+.theme-card:hover{border-color:var(--border-h)}
+.theme-card.on{border-color:var(--accent);background:var(--accent-dim)}
+.theme-name{font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:3px}
+.theme-desc{font-size:12px;color:var(--t3)}
+.locale-opts{display:flex;gap:8px;flex-wrap:wrap}
+.locale-opt{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t2);font-size:13px;cursor:pointer;font-family:var(--font-body);transition:all .15s}
+.locale-opt.on{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+.ds-group{margin-bottom:28px}
+.ds-label{font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:4px}
+.ds-desc{font-size:12px;color:var(--t3);margin-bottom:10px}
+.ds-opts{display:flex;gap:6px;flex-wrap:wrap}
+.ds-opt{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t2);font-size:13px;cursor:pointer;font-family:var(--font-body);transition:all .15s}
+.ds-opt.on{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+.ds-opt:hover:not(.on){border-color:var(--border-h);color:var(--t1)}
+.toggle{width:40px;height:22px;border-radius:11px;background:var(--overlay);border:1px solid var(--border);cursor:pointer;position:relative;transition:all .2s}
+.toggle.on{background:var(--accent);border-color:var(--accent)}
+.toggle::after{content:'';width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .2s}
+.toggle.on::after{transform:translateX(18px)}
+.form-c{max-width:480px;margin:0 auto;padding:32px 24px}
+.form-title{font-size:24px;margin-bottom:4px}
+.form-sub{font-size:13px;color:var(--t3);margin-bottom:28px}
+.field{margin-bottom:20px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--t2);margin-bottom:6px}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--t1);font-size:14px;font-family:var(--font-body);outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--t3)}
+.field .hint{font-size:11px;color:var(--t3);margin-top:4px}
+.empty-zone{padding:60px 24px;text-align:center;position:relative}
+.empty-visual{width:200px;height:120px;margin:0 auto 24px;position:relative;border-radius:12px;background:var(--surface);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.empty-visual-inner{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ev-bar{height:3px;border-radius:2px;background:var(--accent);opacity:.6}
+.ev-bar:nth-child(1){width:80px}.ev-bar:nth-child(2){width:50px;opacity:.3}.ev-bar:nth-child(3){width:65px;opacity:.15}
+.empty-sparkle{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent);animation:sparkle 2s ease-in-out infinite}
+@keyframes sparkle{0%,100%{opacity:0;transform:scale(0)}50%{opacity:.5;transform:scale(1)}}
+.empty-h{font-family:var(--font-display);font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-0.02em}
+.empty-p{font-size:14px;color:var(--t2);max-width:360px;margin:0 auto 6px;line-height:1.6}
+.empty-sub{font-size:12px;color:var(--t3);max-width:300px;margin:0 auto 24px}
+.preview-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:16px;margin-bottom:28px}
+.preview-swatch{width:48px;height:48px;border-radius:10px;flex-shrink:0}
+.preview-info{flex:1}
+.preview-info-label{font-size:12px;color:var(--t3)}
+.preview-info-val{font-size:14px;font-weight:600}
+@media(max-width:768px){
+  .ev-c{padding:20px 16px}.ecard-date{display:none}.quick-stats{gap:12px;flex-wrap:wrap}
+  .dl{grid-template-columns:1fr}
+  .dl-side{border-right:none;border-bottom:1px solid var(--border);padding:12px 16px;display:flex;gap:4px;overflow-x:auto}
+  .side-back,.side-sec{display:none}
+  .side-item{white-space:nowrap;padding:6px 12px;font-size:12px}.side-cnt{display:none}
+  .dl-main{padding:20px 16px}.dh-title{font-size:20px}
+  .launch-row{flex-direction:column;align-items:stretch}.launch-links{flex-direction:column}
+  .metrics{grid-template-columns:repeat(2,1fr)}.theme-grid{grid-template-columns:1fr}
+  .color-swatch{width:44px;height:44px}
+}
+</style>
+</head>
+<body>
+
+<div class="screen-nav">
+  <button class="active" onclick="go('empty')">Empty State</button>
+  <button onclick="go('events')">Events List</button>
+  <div class="sep"></div>
+  <button onclick="go('new')">New Event</button>
+  <div class="sep"></div>
+  <button onclick="go('overview')">Overview</button>
+  <button onclick="go('participants')">Participants</button>
+  <button onclick="go('prizes')">Prizes</button>
+  <button onclick="go('appearance')">Appearance</button>
+  <button onclick="go('settings')">Draw Settings</button>
+  <div class="sep"></div>
+  <button onclick="go('completed')">Completed</button>
+</div>
+
+<!-- EMPTY STATE -->
+<div id="v-empty" class="view active">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="ev-c">
+    <div class="ev-h"><div><div class="ev-title h-display">Events</div></div></div>
+    <div class="empty-zone">
+      <div class="empty-visual">
+        <div class="empty-sparkle" style="top:15%;left:20%;animation-delay:0s"></div>
+        <div class="empty-sparkle" style="top:30%;right:25%;animation-delay:0.7s"></div>
+        <div class="empty-sparkle" style="bottom:25%;left:35%;animation-delay:1.4s"></div>
+        <div class="empty-visual-inner"><div class="ev-bar"></div><div class="ev-bar"></div><div class="ev-bar"></div></div>
+      </div>
+      <div class="empty-h">Run unforgettable lucky draws</div>
+      <div class="empty-p">Upload your guest list, configure prizes, and launch a live draw experience on any big screen.</div>
+      <div class="empty-sub">Used by event companies across Hong Kong for annual dinners, galas, and corporate events.</div>
+      <button class="btn btn-p" style="font-size:14px;padding:10px 20px" onclick="go('new')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create your first event
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENTS LIST -->
+<div id="v-events" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="ev-c">
+    <div class="ev-h"><div><div class="ev-title h-display">Events</div></div><button class="btn btn-p" onclick="go('new')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Event</button></div>
+    <div class="quick-stats"><div class="qs-item"><span class="qs-num">3</span> total</div><div class="qs-item"><span class="qs-num">1</span> ready</div><div class="qs-item"><span class="qs-num">1</span> draft</div><div class="qs-item"><span class="qs-num">1</span> completed</div></div>
+    <div class="filter-bar"><button class="chip on">All</button><button class="chip">Draft</button><button class="chip">Ready</button><button class="chip">Completed</button></div>
+    <div class="ecard" onclick="go('overview')"><div class="ecard-bar ready"></div><div class="ecard-body"><div class="ring"><svg width="40" height="40" viewBox="0 0 40 40"><circle class="ring-bg" cx="20" cy="20" r="17"/><circle class="ring-f" cx="20" cy="20" r="17" stroke="#22c55e" stroke-dasharray="106.8" stroke-dashoffset="0"/></svg><div class="ring-t" style="color:#22c55e">100</div></div><div class="ecard-info"><div class="ecard-name">Annual Gala 2026</div><div class="ecard-zh">2026年週年晚宴</div><div class="ecard-date"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>12 Apr</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>100</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>14</span></div></div><span class="badge ready">Ready</span></div></div>
+    <div class="ecard"><div class="ecard-bar draft"></div><div class="ecard-body"><div class="ring"><svg width="40" height="40" viewBox="0 0 40 40"><circle class="ring-bg" cx="20" cy="20" r="17"/><circle class="ring-f" cx="20" cy="20" r="17" stroke="#f59e0b" stroke-dasharray="106.8" stroke-dashoffset="35.6"/></svg><div class="ring-t">67</div></div><div class="ecard-info"><div class="ecard-name">Tech Summit HK 2026</div><div class="ecard-zh">2026香港科技峰會</div><div class="ecard-date"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>20 May</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>250</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>0</span></div></div><span class="badge draft">Draft</span></div></div>
+    <div class="ecard" onclick="go('completed')"><div class="ecard-bar done"></div><div class="ecard-body"><div class="ring"><svg width="40" height="40" viewBox="0 0 40 40"><circle class="ring-bg" cx="20" cy="20" r="17"/><circle class="ring-f" cx="20" cy="20" r="17" stroke="#64748b" stroke-dasharray="106.8" stroke-dashoffset="0"/></svg><div class="ring-t" style="color:var(--slate)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg></div></div><div class="ecard-info"><div class="ecard-name">Annual Dinner 2026</div><div class="ecard-zh">2026年週年晚宴</div><div class="ecard-date"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>5 Apr</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>3 winners</span></div></div><span class="badge done">Done</span></div></div>
+  </div>
+</div>
+
+<!-- NEW EVENT -->
+<div id="v-new" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="form-c">
+    <div style="margin-bottom:24px"><span class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</span></div>
+    <div class="form-title h-display">New Event</div>
+    <div class="form-sub">Set up the basics. Add participants and prizes after creating.</div>
+    <div class="field"><label>Event Name (English)</label><input placeholder="Annual Dinner 2026"></div>
+    <div class="field"><label>Event Name (Chinese)</label><input placeholder="2026年週年晚宴"><div class="hint">Shown on the draw stage alongside the English name</div></div>
+    <div class="field"><label>Event Date</label><input type="date"></div>
+    <div class="field"><label>Expected Participants</label><input type="number" placeholder="100"><div class="hint">Approximate. Upload the actual list later.</div></div>
+    <div style="display:flex;gap:10px;margin-top:28px"><button class="btn" onclick="go('events')">Cancel</button><button class="btn btn-p" style="flex:1" onclick="go('overview')">Create Event</button></div>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<div id="v-overview" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="dl">
+    <aside class="dl-side">
+      <div class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</div>
+      <div class="side-sec">Event</div>
+      <div class="side-item on" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Overview</div>
+      <div class="side-item" onclick="go('participants')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>Participants<span class="side-cnt">100</span></div>
+      <div class="side-item" onclick="go('prizes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>Prizes<span class="side-cnt">14</span></div>
+      <div class="side-sec">Configure</div>
+      <div class="side-item" onclick="go('appearance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/></svg>Appearance</div>
+      <div class="side-item" onclick="go('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Draw Settings</div>
+      <div class="side-sec">Results</div>
+      <div class="side-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Winners</div>
+    </aside>
+    <main class="dl-main">
+      <div class="dh"><div><div class="dh-title h-display">Annual Gala 2026</div><div class="dh-sub">2026年週年晚宴 &middot; 12 Apr 2026</div></div><div class="dh-actions"><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button><span class="badge ready" style="font-size:11px;padding:5px 10px">Ready</span></div></div>
+      <div class="launch">
+        <div class="launch-dots"><div class="launch-dot" style="left:10%;bottom:0;animation-delay:0s"></div><div class="launch-dot" style="left:25%;bottom:0;animation-delay:0.8s"></div><div class="launch-dot" style="left:45%;bottom:0;animation-delay:1.6s"></div><div class="launch-dot" style="left:65%;bottom:0;animation-delay:0.4s"></div><div class="launch-dot" style="left:80%;bottom:0;animation-delay:1.2s"></div><div class="launch-dot" style="left:92%;bottom:0;animation-delay:2.0s"></div></div>
+        <div class="launch-label">Draw Stage</div>
+        <div class="launch-row"><button class="btn-launch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>Open Stage</button><div class="launch-links"><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Remote</button><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Audience</button><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>QR</button></div></div>
+        <div class="launch-tip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Open Stage on a big screen, then control from your phone via Remote</div>
+      </div>
+      <div class="metrics"><div class="mc"><div class="mc-label">Participants</div><div class="mc-val">100</div><div class="mc-sub">All eligible</div></div><div class="mc"><div class="mc-label">Prize Tiers</div><div class="mc-val">3</div><div class="mc-sub">14 total prizes</div></div><div class="mc"><div class="mc-label">Total Value</div><div class="mc-val">$48K</div><div class="mc-sub">Across all tiers</div></div><div class="mc"><div class="mc-label">Draw Progress</div><div class="mc-val">0/14</div><div class="mc-sub">Not started</div></div></div>
+      <div class="sec-label">Setup</div>
+      <div class="slist">
+        <div class="sitem" onclick="go('participants')"><div class="scheck ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg></div><div class="sitem-label">Participants</div><div class="sitem-val">100 added</div><div class="sitem-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="sitem" onclick="go('prizes')"><div class="scheck ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg></div><div class="sitem-label">Prize Tiers</div><div class="sitem-val">3 tiers, 14 prizes</div><div class="sitem-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+        <div class="sitem" onclick="go('appearance')"><div class="scheck ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg></div><div class="sitem-label">Appearance</div><div class="sitem-val" style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;border-radius:3px;background:#6366f1"></div>Galaxy</div><div class="sitem-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- PARTICIPANTS -->
+<div id="v-participants" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="dl">
+    <aside class="dl-side">
+      <div class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</div>
+      <div class="side-sec">Event</div>
+      <div class="side-item" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Overview</div>
+      <div class="side-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>Participants<span class="side-cnt">100</span></div>
+      <div class="side-item" onclick="go('prizes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>Prizes<span class="side-cnt">14</span></div>
+      <div class="side-sec">Configure</div>
+      <div class="side-item" onclick="go('appearance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/></svg>Appearance</div>
+      <div class="side-item" onclick="go('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Draw Settings</div>
+    </aside>
+    <main class="dl-main">
+      <div class="dh"><div><div class="dh-title h-display">Participants</div><div class="dh-sub">100 people added</div></div><div class="dh-actions"><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Import CSV</button><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Template</button></div></div>
+      <div class="p-toolbar"><input class="p-search" placeholder="Search participants..."><button class="btn btn-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+        <div class="p-row"><span class="p-num">1</span><div class="p-avatar" style="background:#6366f1">C</div><span class="p-name">Chan Tai Man</span><span class="p-zh">陳大文</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-row"><span class="p-num">2</span><div class="p-avatar" style="background:#22c55e">L</div><span class="p-name">Lee Siu Ming</span><span class="p-zh">李小明</span><span class="p-won">Won: AirPods</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-row"><span class="p-num">3</span><div class="p-avatar" style="background:#f59e0b">C</div><span class="p-name">Cheung Wai Kin</span><span class="p-zh">張偉健</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-row"><span class="p-num">4</span><div class="p-avatar" style="background:#ec4899">W</div><span class="p-name">Wong Mei Ling</span><span class="p-zh">王美玲</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-row"><span class="p-num">5</span><div class="p-avatar" style="background:#06b6d4">L</div><span class="p-name">Lam Chi Keung</span><span class="p-zh">林志強</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-row"><span class="p-num">6</span><div class="p-avatar" style="background:#8b5cf6">L</div><span class="p-name">Lau Ka Yan</span><span class="p-zh">劉嘉欣</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-row"><span class="p-num">7</span><div class="p-avatar" style="background:#ef4444">W</div><span class="p-name">Wong Si Wai</span><span class="p-zh">黃思慧</span><button class="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>
+        <div class="p-footer"><span>Showing 7 of 100</span><span style="color:var(--accent);cursor:pointer">Load more</span></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- PRIZES -->
+<div id="v-prizes" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="dl">
+    <aside class="dl-side">
+      <div class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</div>
+      <div class="side-sec">Event</div>
+      <div class="side-item" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Overview</div>
+      <div class="side-item" onclick="go('participants')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>Participants<span class="side-cnt">100</span></div>
+      <div class="side-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>Prizes<span class="side-cnt">14</span></div>
+      <div class="side-sec">Configure</div>
+      <div class="side-item" onclick="go('appearance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/></svg>Appearance</div>
+      <div class="side-item" onclick="go('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Draw Settings</div>
+    </aside>
+    <main class="dl-main">
+      <div class="dh"><div><div class="dh-title h-display">Prizes</div><div class="dh-sub">3 tiers &middot; 14 prizes &middot; HK$48,200 total</div></div><div class="dh-actions"><button class="btn btn-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Tier</button></div></div>
+      <div class="tier"><div class="tier-head"><div class="tier-num">1</div><div class="tier-name">Grand Prize</div><div class="tier-info">1 prize &middot; HK$8,000</div><select class="tier-mode-select"><option selected>One by one</option><option>Batch draw</option><option>All at once</option></select></div><div class="prize-row"><svg class="prize-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg><span class="prize-name">iPhone 16 Pro</span><span class="prize-val">HK$8,000</span><span class="prize-status pending">Pending</span></div></div>
+      <div class="tier"><div class="tier-head"><div class="tier-num">2</div><div class="tier-name">Second Prize</div><div class="tier-info">3 prizes &middot; HK$5,400</div><select class="tier-mode-select"><option selected>One by one</option><option>Batch draw</option><option>All at once</option></select></div><div class="prize-row"><svg class="prize-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg><span class="prize-name">AirPods Pro</span><span class="prize-val">HK$1,800</span><span class="prize-status pending">Pending</span></div><div class="prize-row"><svg class="prize-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg><span class="prize-name">AirPods Pro</span><span class="prize-val">HK$1,800</span><span class="prize-status pending">Pending</span></div><div class="prize-row"><svg class="prize-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg><span class="prize-name">AirPods Pro</span><span class="prize-val">HK$1,800</span><span class="prize-status pending">Pending</span></div></div>
+      <div class="tier"><div class="tier-head"><div class="tier-num">3</div><div class="tier-name">Consolation</div><div class="tier-info">10 prizes &middot; HK$2,000</div><select class="tier-mode-select"><option>One by one</option><option selected>Batch draw</option><option>All at once</option></select></div><div class="prize-row"><svg class="prize-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg><span class="prize-name">Gift Voucher HK$200</span><span class="prize-val">HK$200 &times; 10</span><span class="prize-status pending">0/10</span></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- APPEARANCE -->
+<div id="v-appearance" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="dl">
+    <aside class="dl-side">
+      <div class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</div>
+      <div class="side-sec">Event</div>
+      <div class="side-item" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Overview</div>
+      <div class="side-item" onclick="go('participants')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>Participants<span class="side-cnt">100</span></div>
+      <div class="side-item" onclick="go('prizes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>Prizes<span class="side-cnt">14</span></div>
+      <div class="side-sec">Configure</div>
+      <div class="side-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/></svg>Appearance</div>
+      <div class="side-item" onclick="go('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Draw Settings</div>
+    </aside>
+    <main class="dl-main">
+      <div class="dh"><div><div class="dh-title h-display">Appearance</div><div class="dh-sub">Customize how the draw stage looks</div></div><div class="dh-actions"><button class="btn btn-p">Save</button></div></div>
+      <div class="preview-bar"><div class="preview-swatch" id="preview-swatch" style="background:#6366f1"></div><div class="preview-info"><div class="preview-info-label">Current setup</div><div class="preview-info-val">Galaxy &middot; Indigo &middot; Chinese + English</div></div><button class="btn btn-p">Preview Stage</button></div>
+      <div class="ap-section"><div class="ap-label">Accent Color</div><div class="ap-desc">Used for highlights, winner display, and animation accents.</div><div class="color-grid"><div class="color-swatch on" style="background:#6366f1" data-color="#6366f1" data-name="Indigo"></div><div class="color-swatch" style="background:#ec4899" data-color="#ec4899" data-name="Pink"></div><div class="color-swatch" style="background:#ef4444" data-color="#ef4444" data-name="Red"></div><div class="color-swatch" style="background:#f59e0b" data-color="#f59e0b" data-name="Amber"></div><div class="color-swatch" style="background:#22c55e" data-color="#22c55e" data-name="Green"></div><div class="color-swatch" style="background:#06b6d4" data-color="#06b6d4" data-name="Cyan"></div><div class="color-swatch" style="background:#8b5cf6" data-color="#8b5cf6" data-name="Violet"></div><div class="color-swatch" style="background:#d4d4d8" data-color="#d4d4d8" data-name="Silver"></div></div><div class="color-preview" id="color-preview" style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);border-radius:8px"><div class="color-preview-dot" id="color-dot" style="background:#6366f1;box-shadow:0 0 10px #6366f166"></div><span class="color-preview-text" id="color-name">Indigo &#8212; #6366f1</span></div></div>
+      <div class="ap-section"><div class="ap-label">Draw Theme</div><div class="ap-desc">Each theme has unique idle, spin, and winner reveal animations.</div><div class="theme-grid"><div class="theme-card on"><div class="theme-name">Galaxy</div><div class="theme-desc">Particle nebula with star supernova reveal</div></div><div class="theme-card"><div class="theme-name">Lucky Balls</div><div class="theme-desc">HK lottery drum with physics ball drop</div></div><div class="theme-card"><div class="theme-name">Crystal Oracle</div><div class="theme-desc">Mystical sphere that shatters to reveal</div></div><div class="theme-card"><div class="theme-name">Cyber</div><div class="theme-desc">Matrix rain with character decode</div></div></div></div>
+      <div class="ap-section"><div class="ap-label">Display Language</div><div class="ap-desc">Which name to show first on the draw stage.</div><div class="locale-opts"><button class="locale-opt on">Chinese + English</button><button class="locale-opt">English + Chinese</button><button class="locale-opt">Chinese Only</button><button class="locale-opt">English Only</button></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- DRAW SETTINGS -->
+<div id="v-settings" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="dl">
+    <aside class="dl-side">
+      <div class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</div>
+      <div class="side-sec">Event</div>
+      <div class="side-item" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Overview</div>
+      <div class="side-item" onclick="go('participants')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>Participants<span class="side-cnt">100</span></div>
+      <div class="side-item" onclick="go('prizes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>Prizes<span class="side-cnt">14</span></div>
+      <div class="side-sec">Configure</div>
+      <div class="side-item" onclick="go('appearance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="13.5" cy="17.5" r="2.5"/></svg>Appearance</div>
+      <div class="side-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Draw Settings</div>
+    </aside>
+    <main class="dl-main">
+      <div class="dh"><div><div class="dh-title h-display">Draw Settings</div><div class="dh-sub">Control how the draw experience behaves</div></div><div class="dh-actions"><button class="btn btn-p">Save</button></div></div>
+      <div class="ds-group"><div class="ds-label">Animation Speed</div><div class="ds-desc">How long the spin + reveal takes per draw. Slower = more dramatic.</div><div class="ds-opts"><button class="ds-opt">Slow (~8s)</button><button class="ds-opt on">Normal (~5s)</button><button class="ds-opt">Fast (~3s)</button></div></div>
+      <div class="ds-group"><div class="ds-label">Sound Effects</div><div class="ds-desc">Play drum roll during spin and chime on reveal.</div><div style="display:flex;align-items:center;gap:12px"><div class="toggle" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--t2)">Off</span></div></div>
+      <div class="ds-group"><div class="ds-label">QR Code on Stage</div><div class="ds-desc">Show a QR code linking to the audience view on the stage display.</div><div class="ds-opts"><button class="ds-opt on">Bottom Right</button><button class="ds-opt">Bottom Left</button><button class="ds-opt">Hidden</button></div></div>
+      <div class="ds-group"><div class="ds-label">Winner Announcement</div><div class="ds-desc">How long to show the winner before the operator can draw again.</div><div class="ds-opts"><button class="ds-opt">Until confirmed</button><button class="ds-opt on">Auto-advance (10s)</button><button class="ds-opt">Auto-advance (5s)</button></div></div>
+      <div class="ds-group"><div class="ds-label">Allow Re-draw</div><div class="ds-desc">Let the operator reject and re-draw (e.g., absent winner).</div><div style="display:flex;align-items:center;gap:12px"><div class="toggle on" onclick="this.classList.toggle('on')"></div><span style="font-size:13px;color:var(--t2)">On</span></div></div>
+      <div class="ds-group"><div class="ds-label">Duplicate Winners</div><div class="ds-desc">Can the same person win multiple prizes across different tiers?</div><div class="ds-opts"><button class="ds-opt on">No duplicates</button><button class="ds-opt">Allow across tiers</button></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- COMPLETED -->
+<div id="v-completed" class="view">
+  <nav class="nav"><span class="nav-brand">Lucky Draw</span><div class="nav-spacer"></div><div class="nav-avatar"></div></nav>
+  <div class="dl">
+    <aside class="dl-side">
+      <div class="side-back" onclick="go('events')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Events</div>
+      <div class="side-sec">Event</div>
+      <div class="side-item" onclick="go('overview')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>Overview</div>
+      <div class="side-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>Participants<span class="side-cnt">4</span></div>
+      <div class="side-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>Prizes<span class="side-cnt">3</span></div>
+      <div class="side-sec">Results</div>
+      <div class="side-item on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Winners<span class="side-cnt">3</span></div>
+    </aside>
+    <main class="dl-main">
+      <div class="dh"><div><div class="dh-title h-display">Annual Dinner 2026</div><div class="dh-sub">2026年週年晚宴 &middot; 5 Apr 2026</div></div><div class="dh-actions"><button class="btn btn-p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button><span class="badge done" style="font-size:11px;padding:5px 10px">Completed</span></div></div>
+      <div class="metrics"><div class="mc"><div class="mc-label">Participants</div><div class="mc-val">4</div></div><div class="mc"><div class="mc-label">Winners</div><div class="mc-val">3</div></div><div class="mc"><div class="mc-label">Prizes Awarded</div><div class="mc-val">3/3</div><div class="mc-sub">All awarded</div></div><div class="mc"><div class="mc-label">Total Value</div><div class="mc-val">$12K</div></div></div>
+      <div class="sec-label">Winners</div>
+      <table class="tbl"><thead><tr><th>Winner</th><th>Prize</th><th>Tier</th><th>Time</th></tr></thead><tbody>
+        <tr><td><strong>陳麗燕</strong> <span style="color:var(--t2);margin-left:6px">Chan Lai Yin</span></td><td>iPhone 16 Pro</td><td><span class="tier-badge">Grand Prize</span></td><td style="color:var(--t3);font-variant-numeric:tabular-nums">19:42</td></tr>
+        <tr><td><strong>李小明</strong> <span style="color:var(--t2);margin-left:6px">Lee Siu Ming</span></td><td>AirPods Pro</td><td><span class="tier-badge">Second Prize</span></td><td style="color:var(--t3);font-variant-numeric:tabular-nums">19:38</td></tr>
+        <tr><td><strong>張偉健</strong> <span style="color:var(--t2);margin-left:6px">Cheung Wai Kin</span></td><td>Gift Voucher HK$200</td><td><span class="tier-badge">Consolation</span></td><td style="color:var(--t3);font-variant-numeric:tabular-nums">19:35</td></tr>
+      </tbody></table>
+    </main>
+  </div>
+</div>
+
+<script>
+function go(id){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  document.querySelectorAll('.screen-nav button').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('v-'+id).classList.add('active');
+  var btns=document.querySelectorAll('.screen-nav button');
+  var map={empty:0,events:1,new:2,overview:3,participants:4,prizes:5,appearance:6,settings:7,completed:8};
+  if(map[id]!==undefined)btns[map[id]].classList.add('active');
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on')});c.classList.add('on')})});
+document.querySelectorAll('.theme-card').forEach(function(c){c.addEventListener('click',function(){document.querySelectorAll('.theme-card').forEach(function(x){x.classList.remove('on')});c.classList.add('on')})});
+document.querySelectorAll('.locale-opt').forEach(function(o){o.addEventListener('click',function(){document.querySelectorAll('.locale-opt').forEach(function(x){x.classList.remove('on')});o.classList.add('on')})});
+document.querySelectorAll('.ds-group .ds-opts').forEach(function(g){g.querySelectorAll('.ds-opt').forEach(function(o){o.addEventListener('click',function(){g.querySelectorAll('.ds-opt').forEach(function(x){x.classList.remove('on')});o.classList.add('on')})})});
+document.querySelectorAll('.color-swatch').forEach(function(s){s.addEventListener('click',function(){
+  document.querySelectorAll('.color-swatch').forEach(function(x){x.classList.remove('on')});
+  s.classList.add('on');
+  var c=s.dataset.color,n=s.dataset.name;
+  document.getElementById('preview-swatch').style.background=c;
+  document.getElementById('color-dot').style.background=c;
+  document.getElementById('color-dot').style.boxShadow='0 0 10px '+c+'66';
+  document.getElementById('color-preview').style.background=c+'14';
+  document.getElementById('color-preview').style.borderColor=c+'26';
+  document.getElementById('color-name').textContent=n+' \u2014 '+c;
+})});
+</script>
+</body>
+</html>

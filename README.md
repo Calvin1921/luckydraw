@@ -52,6 +52,18 @@ job it is best at:
 - **A canvas particle renderer** owns the atmosphere — beams, bloom and particle
   drift behind the typography.
 
+### Direction reference: the split-flap ceremony
+
+The locked motion direction for the draw stage is a physically-real Solari
+split-flap departure board, filmed like a movie — spin-up, decelerating
+left-to-right slam-locks, a half-flip tremble on the final letter, then a
+camera pull-back to the full winner board. It exists today as a standalone
+three.js prototype (PBR materials, depth of field, bloom, film grain; not yet
+integrated into the app) and serves as the quality bar the production scene
+is built toward:
+
+![Split-flap ceremony prototype — spin-up, slam-locks, and camera pull-back to the winner board](docs/media/clack-cinema-reveal.gif)
+
 ## Accessibility
 
 Motion is treated as a preference, not a default. The scene checks

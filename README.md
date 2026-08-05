@@ -1,10 +1,11 @@
 # Lucky Draw
 
-A live lucky-draw system for event nights — annual dinners, galas, company parties.
-One organizer laptop drives three synced screens: a cinematic draw stage on the
-projector, a remote control on the host's phone, and an audience view. Built for
-Hong Kong events, so every surface handles bilingual names (Traditional Chinese +
-Latin) as a first-class case.
+A standalone lucky-draw product for live events — company parties, annual dinners,
+weddings, meetups. Load your participant list, put the draw stage on the big screen,
+and run the prize moment as a cinematic sequence. One organizer laptop drives three
+synced screens: the draw stage on the projector, a remote control on the host's
+phone, and an audience view. Bilingual names (Traditional Chinese + Latin) are a
+first-class case on every surface.
 
 ![Nova draw animation — spin-up, name cycling, winner reveal](docs/media/draw-nova.gif)
 

@@ -1,7 +1,11 @@
 # Architecture: Lucky Draw MVP
 
-> **Status:** APPROVED WITH CONDITIONS — 4 CRITICAL, 4 HIGH conditions (see Security Model)
-> **Last updated:** 2026-04-08
+> **Written:** 2026-04-08 as the pre-build architecture + threat model. The Security
+> Model section below is the *planning-time* threat model — its CRITICAL conditions
+> (org-ownership guards, `internalMutation` for license activation, PII projection on
+> the draw surfaces) were requirements for the build, and are now implemented; see
+> [SECURITY_REVIEW_FINDINGS.md](./SECURITY_REVIEW_FINDINGS.md) for the current
+> post-implementation status.
 
 ## Document Suite
 

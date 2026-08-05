@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest"
 import schema from "../convex/schema"
 import { api } from "../convex/_generated/api"
 
+// convex-test discovers Convex modules via Vite's import.meta.glob (typed in
+// tests/vite-env.d.ts — `vite/client` isn't resolvable as Vite is only transitive).
 const modules = import.meta.glob("../convex/**/!(*.*.*)*.*s")
 
 const CLERK_ORG = "org_test_1"

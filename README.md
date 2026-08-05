@@ -7,7 +7,9 @@ synced screens: the draw stage on the projector, a remote control on the host's
 phone, and an audience view. Bilingual names (Traditional Chinese + Latin) are a
 first-class case on every surface.
 
-![Nova draw animation — spin-up, name cycling, winner reveal](docs/media/draw-nova.gif)
+| In-app draw scene (Nova) | Split-flap ceremony prototype |
+|---|---|
+| ![Nova draw animation — spin-up, name cycling, winner reveal](docs/media/draw-nova.gif) | ![Split-flap ceremony prototype — spin-up, slam-locks, and camera pull-back to the winner board](docs/media/clack-cinema-reveal.gif) |
 
 | Draw stage (projector) | Phone remote | Organizer dashboard |
 |---|---|---|
@@ -60,9 +62,8 @@ left-to-right slam-locks, a half-flip tremble on the final letter, then a
 camera pull-back to the full winner board. It exists today as a standalone
 three.js prototype (PBR materials, depth of field, bloom, film grain; not yet
 integrated into the app) and serves as the quality bar the production scene
-is built toward:
-
-![Split-flap ceremony prototype — spin-up, slam-locks, and camera pull-back to the winner board](docs/media/clack-cinema-reveal.gif)
+is built toward — shown side by side with the current scene at the top of
+this page.
 
 ## Accessibility
 

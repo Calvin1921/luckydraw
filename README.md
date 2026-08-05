@@ -107,7 +107,7 @@ Auth needs a (free) Clerk application — put its keys in `.env.local` (see
 npx convex run seed:seedDemoData
 ```
 
-`pnpm test` runs the unit tests (draw algorithm, CSV import). CI runs
+`pnpm test` runs the unit tests (draw algorithm, CSV import, access control). CI runs
 typecheck, lint, tests and a production build on every push; the build uses
 placeholder Clerk/Convex values since prerendering only needs them to exist.
 

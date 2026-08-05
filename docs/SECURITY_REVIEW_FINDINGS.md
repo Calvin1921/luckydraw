@@ -49,11 +49,7 @@ These three mutations are designed for the unauthenticated phone remote. The `re
 ### [VULN-001] IDOR — Unauthenticated Read of Participant PII (email, phone)
 - **CVSS Score:** 7.5 (High)
 - **Category:** A01 Broken Access Control
-- **Description:** `participants.list` query has no authentication or ownership check. Any client that knows a valid `eventId` can read the full participant list including `email` and `phone`.
-- **Steps to reproduce:**
-  1. Obtain any valid `drawEvents` document ID (guessable via Convex ID format, or leaked via shared draw URLs)
-  2. Call `api.participants.list({ eventId })` from any unauthenticated Convex client
-  3. Receive full participant records with `name`, `email`, `phone`
+- **Description:** `participants.list` query had no authentication or ownership check. Any client that knew a valid `eventId` could read the full participant list including `email` and `phone`.
 - **Impact:** Full PII exfiltration of all event participants. In HK context, violates PDPO (Personal Data Ordinance).
 - **Evidence:** `convex/participants.ts:8-16` — `query({ handler: async (ctx, args) => ctx.db.query(...).collect() })` — no `ctx.auth.getUserIdentity()` call.
 - **Remediation:** Add ownership guard to the query, or create a separate public-safe projection that strips email/phone for authenticated-only reads.
@@ -64,11 +60,7 @@ These three mutations are designed for the unauthenticated phone remote. The `re
 ### [VULN-002] Unauthenticated Read of Winner PII (email) via winnerLogs
 - **CVSS Score:** 6.5 (Medium)
 - **Category:** A01 Broken Access Control
-- **Description:** `winnerLogs.listConfirmed` has no auth check. It returns `participantEmail` for all confirmed winners of any known event.
-- **Steps to reproduce:**
-  1. Obtain any valid `drawEvents` document ID
-  2. Call `api.winnerLogs.listConfirmed({ eventId })` from any unauthenticated client
-  3. Receive winner records containing `participantEmail`
+- **Description:** `winnerLogs.listConfirmed` had no auth check. It returned `participantEmail` for all confirmed winners of any known event.
 - **Impact:** Email exfiltration of prize winners.
 - **Evidence:** `convex/winnerLogs.ts:4-15` — no auth check.
 - **Remediation:** Add auth + ownership guard, or strip `participantEmail` from the query result if it need not be returned in the public export path.

@@ -102,7 +102,6 @@ Remote (phone) ──useMutation──▶ Convex triggerDraw mutation
 | Payments | Stripe (Checkout) | Per-event licensing via Checkout Session + webhook |
 | Email | Resend | Post-MVP: winner notification emails |
 | Storage | Cloudflare R2 | Post-MVP: logo uploads for event branding |
-| Monorepo | Turborepo | Originally developed in a Turborepo workspace; extracted to a standalone repo |
 | Testing | Vitest | Fast, ESM-native, compatible with Convex test patterns |
 | Deploy | Vercel + Convex Cloud | Zero-config Next.js deploy; Convex handles backend infra |
 

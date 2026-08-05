@@ -17,7 +17,13 @@ out/
 .env*.local
 
 # build artifacts
-tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# test coverage
+coverage/
+
+# vercel
+.vercel
 
 # misc
 .DS_Store

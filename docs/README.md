@@ -5,9 +5,12 @@
 | Guide | Purpose |
 |---|---|
 | [Quick start](QUICKSTART.md) | Service setup, one-command fake seed, three-window trial and recovery |
-| [80-second demo script](DEMO_VIDEO.md) | Narration, shot list and fake-data recording instructions |
+| [Screenshot walkthrough](DEMO_WALKTHROUGH.md) | Understand the organizer, host and display journey without a video |
+| [Roadmap](ROADMAP.md) | Known user-facing gaps and concrete next steps |
 | [Engineering evidence](ENGINEERING.md) | Current behavior, source links and production boundaries |
 | [Portfolio audit](PORTFOLIO_AUDIT.md) | Findings, changes and verification limits for this refresh |
+
+An [optional recording script](DEMO_VIDEO.md) is retained for future use; the current presentation uses screenshots.
 
 ## Historical product and design documents
 

@@ -7,10 +7,11 @@
     "dev": "concurrently \"next dev\" \"convex dev\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "demo:seed": "convex run seed:createDemo"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.3.0",

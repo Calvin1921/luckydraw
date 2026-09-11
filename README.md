@@ -1,132 +1,135 @@
 # Lucky Draw
 
-A standalone lucky-draw product for live events — company parties, annual dinners,
-weddings, meetups. Load your participant list, put the draw stage on the big screen,
-and run the prize moment as a cinematic sequence. One organizer laptop drives three
-synced screens: the draw stage on the projector, a remote control on the host's
-phone, and an audience view. Bilingual names (Traditional Chinese + Latin) are a
-first-class case on every surface.
+### One host. Three screens. A smoother prize draw.
 
-| In-app draw scene (Nova) | Split-flap ceremony prototype |
-|---|---|
-| ![Nova draw animation — spin-up, name cycling, winner reveal](docs/media/draw-nova.gif) | ![Split-flap ceremony prototype — spin-up, slam-locks, and camera pull-back to the winner board](docs/media/clack-cinema-reveal.gif) |
+At a live event, drawing a name is only one part of the job. Someone has to prepare the guest list, tell the host what comes next, keep the projector in sync, and handle a prize that goes unclaimed.
 
-| Draw stage (projector) | Phone remote | Organizer dashboard |
+**Lucky Draw brings that workflow together:** prepare the event once, run the draw from a phone, and let the stage and audience displays follow the same result.
+
+![The actual Lucky Draw stage revealing the fictional participant Demo Guest 079.](docs/media/demo-stage.png)
+
+*Actual app capture using fictional data. Current status: working prototype for local demos; [production boundaries](#current-boundaries) remain.*
+
+[See the workflow](#from-preparation-to-prize) · [Try a fictional event](#try-it) · [Explore the engineering](docs/ENGINEERING.md) · [Contribute](CONTRIBUTING.md)
+
+## See the draw in motion
+
+![Existing in-app Nova demo: names cycle before the selected guest is revealed.](docs/media/draw-nova.gif)
+
+*Existing Nova app demo. The fictional-data screenshots below explain the organizer and host workflow around the reveal.*
+
+## From preparation to prize
+
+![Workflow illustration: the organizer prepares guests and prizes; a phone remote controls the draw; the stage and audience displays follow the shared result.](docs/media/three-screen-workflow.svg)
+
+1. **Prepare.** Add participants and arrange prizes into rounds in the organizer dashboard.
+2. **Present.** Open the stage on a projector and the audience view on another display. The host selects a round on the phone remote.
+3. **Draw.** Tap **DRAW**. The server selects a guest, and the connected displays receive that result.
+4. **Resolve.** Confirm to award the prize, or reject an unclaimed result and draw again. Each action is recorded in the backend.
+
+Confirmation uses a second tap and reduces the remaining-prize count. Rejection keeps the prize available. **A rejected guest remains eligible**—the current flow does not automatically mark them absent.
+
+## Meet the three live screens
+
+| Host’s phone | Projector | Audience display |
 |---|---|---|
-| ![Winner reveal on the fullscreen stage](docs/media/stage-reveal.jpg) | ![Confirm/reject controls on mobile](docs/media/remote-mobile.jpg) | ![Events dashboard](docs/media/events-dashboard.jpg) |
+| Select a round, draw, confirm or reject. | Make the selected guest visible to the room. | Follow the shared result on another screen. |
+| <img src="docs/media/demo-remote.png" alt="Remote showing fictional guest Demo Guest 079 with Reject and Confirm buttons." width="240"> | <img src="docs/media/demo-stage.png" alt="Projector stage revealing fictional guest Demo Guest 079." width="500"> | <img src="docs/media/demo-audience.png" alt="Audience view showing fictional guest Demo Guest 079." width="240"> |
 
-## Why
+*Three views of the same fictional result, captured separately in desktop browser windows on a local development instance. The remote also supports phone-sized use.*
 
-Running a draw at a real event usually means a spreadsheet and an awkward pause.
-The moment deserves better: the reveal is the emotional peak of the night. Lucky
-Draw turns it into a staged sequence — the host presses one button on their phone,
-the projector runs a choreographed reveal, and the winner is logged with an audit
-trail. If the winner isn't in the room, one tap rejects and redraws.
+The organizer dashboard sits outside those three live screens: it is where the event is prepared and winner export becomes available after a confirmation.
 
-## How it works
+<details>
+<summary><strong>See the organizer dashboard</strong></summary>
 
-Three routes subscribe to the same Convex query (`draw.getSession`). A mutation
-from the phone remote changes the session state; the stage and audience screens
-re-render automatically. There is no WebSocket plumbing in the app code — Convex
-reactive queries carry the realtime sync.
+![Organizer overview showing 100 fictional participants, three prize rounds, and links to the stage, remote and audience views.](docs/media/demo-organizer.png)
 
-```
-Phone remote ──mutation──▶ Convex drawSession
-                               │
-              ┌────────────────┼────────────────┐
-        Stage useQuery   Remote useQuery   Audience useQuery
-```
+</details>
 
-Winner selection is a pure function: Fisher-Yates over the eligible pool, seeded
-from `crypto.getRandomValues` (`lib/draw-algorithm.ts`). Every confirmed winner is
-written to an audit log (`convex/winnerLogs.ts`), and draw mutations validate a
-per-session remote token server-side (`convex/draw.ts`).
+## Why these choices matter
 
-## The motion system
+| During an event… | Lucky Draw’s approach |
+|---|---|
+| The host should focus on the room. | A focused phone remote carries the live controls. |
+| Multiple displays must agree on the result. | Stage and audience use shared reactive session state. |
+| Selecting someone is not the same as awarding a prize. | A human confirms the result before the prize is marked awarded. |
+| A prize may go unclaimed. | Reject returns the prize to the available pool for another draw. |
+| The organizer needs a record afterward. | Drawn, confirmed and rejected actions create log entries; confirmed winners have an authenticated CSV export path. |
+| Names and motion preferences differ. | Bilingual labels and a static reduced-motion path are built into the presentation. |
 
-The draw scene (`components/draw/NovaDraw.tsx`) layers three tools, each doing the
-job it is best at:
+This is a product-engineering project, with no LLM dependency. The work is in coordinating people, screens and state. No measured time savings, event-scale benchmark or accessibility certification is claimed.
 
-- **GSAP** owns the draw timeline — the two-phase choreography (fast name cycling,
-  then deceleration into the reveal) needs programmatic timeline control.
-- **Framer Motion** owns UI enter/exit transitions — the winner card, dashboard
-  panels, page fades.
-- **A canvas particle renderer** owns the atmosphere — beams, bloom and particle
-  drift behind the typography.
+## Try it
 
-### Direction reference: the split-flap ceremony
+The shortest trial is **three browser windows on one laptop**. No projector, physical phone or payment setup is required.
 
-The locked motion direction for the draw stage is a physically-real Solari
-split-flap departure board, filmed like a movie — spin-up, decelerating
-left-to-right slam-locks, a half-flip tremble on the final letter, then a
-camera pull-back to the full winner board. It exists today as a standalone
-three.js prototype (PBR materials, depth of field, bloom, film grain; not yet
-integrated into the app) and serves as the quality bar the production scene
-is built toward — shown side by side with the current scene at the top of
-this page.
-
-## Accessibility
-
-Motion is treated as a preference, not a default. The scene checks
-`prefers-reduced-motion` through a hook (`lib/hooks.ts`):
-
-```tsx
-export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    // ...
-  }, []);
-  return reduced;
-}
-```
-
-When it returns true, `NovaDraw` skips the entire canvas + GSAP pipeline and
-renders a static winner reveal on a plain gradient — not a slowed-down animation,
-a different rendering path. A global CSS fallback (`app/globals.css`) also clamps
-animation and transition durations under the same media query. Interactive
-surfaces carry ARIA roles and labels throughout (97 `aria-` attributes across
-`app/` and `components/`).
-
-## States
-
-Dashboard pages ship skeleton loading, empty, and error states — the events list,
-event overview, participants and prizes pages each render a skeleton while Convex
-queries resolve, an empty state with a call to action, and error boundaries at
-each level (`app/error.tsx`, `app/(dashboard)/events/[eventId]/error.tsx`,
-`app/draw/[eventId]/error.tsx`, plus `app/not-found.tsx`).
-
-## Stack
-
-Next.js 15 (App Router) · React 19 · TypeScript · Convex (database, server
-functions, realtime) · Clerk (auth + organizations) · Tailwind CSS · GSAP ·
-Framer Motion · Vitest
-
-## Running it
+**You need:** Node.js 22, pnpm 10.22.0, a disposable Convex development deployment, and Clerk development keys. Initial service setup is required; this is not an account-free hosted demo.
 
 ```bash
-pnpm install
-npx convex dev        # first run provisions a dev deployment and fills .env.local
-pnpm dev              # next dev + convex dev
+git clone https://github.com/Calvin1921/luckydraw.git
+cd luckydraw
+pnpm install --frozen-lockfile
+cp .env.example .env.local
 ```
 
-Auth needs a (free) Clerk application — put its keys in `.env.local` (see
-`.env.example`). For a quick local demo without a Clerk account, set
-`NEXT_PUBLIC_DEV_BYPASS_AUTH=true`, which makes all routes public via
-`middleware.ts` (dev only — never in production). Seed demo data with:
+Follow the [one-time setup guide](docs/QUICKSTART.md#configure-the-development-services), then:
 
 ```bash
-npx convex run seed:seedDemoData
+pnpm dev
+# In a second terminal, once Convex is ready:
+pnpm demo:seed
 ```
 
-`pnpm test` runs the unit tests (draw algorithm, CSV import, access control). CI runs
-typecheck, lint, tests and a production build on every push; the build uses
-placeholder Clerk/Convex values since prerendering only needs them to exist.
+The seed creates a **new event with 100 fictional guests, 3 rounds and 14 prizes**, then returns the organizer, stage, remote and audience paths. Open them at `http://localhost:3000`. Re-running the seed creates another event and preserves earlier draws.
 
-## Docs
+**First draw:** open the remote directly from the organizer dashboard, choose the first round, open the stage and audience views, then tap DRAW. Confirm with the second tap and check that the remaining count decreases. The current initial stage does not show its pairing QR code until a round has started.
 
-- [`docs/`](docs/) — objective, PRD, architecture, design language, QA status,
-  user journeys, and a code-level [security review](docs/SECURITY_REVIEW_FINDINGS.md)
-- [`docs/design-review/`](docs/design-review/) — the capture-review-iterate trail
-  behind the draw scene's visual development
+[Full setup and troubleshooting](docs/QUICKSTART.md) · [Screenshot walkthrough](docs/DEMO_WALKTHROUGH.md)
+
+## Under the hood
+
+Next.js 15 · React 19 · TypeScript · Convex · Clerk · Tailwind CSS · Vitest
+
+Convex mutations change the draw session; reactive queries update the views. The server chooses the guest, the host resolves the result, and the database records the action. Animations run locally, so shared results do not imply frame-locked displays.
+
+Nova uses GSAP, Framer Motion and canvas for the reveal. Motion supports the moment; it is secondary to operating the event.
+
+<details>
+<summary><strong>See the split-flap design prototype</strong></summary>
+
+![Existing split-flap ceremony prototype: letters settle into a winner board.](docs/media/clack-cinema-reveal.gif)
+
+This standalone three.js motion prototype explores an alternative reveal. It is not integrated into the app or part of the three-screen trial.
+
+</details>
+
+[Engineering evidence](docs/ENGINEERING.md) covers the implementation, accessibility hooks, loading/error states, selection algorithm and current tradeoffs. [The roadmap](docs/ROADMAP.md) turns the remaining gaps into concrete next steps.
+
+## Current boundaries
+
+Use **fictional data on an isolated development deployment**. This public source release is a working prototype, not a production-readiness claim.
+
+- **Remote access:** public session queries can expose control tokens. Event IDs are not organizer authorization; stronger pairing and permissions are needed before real events.
+- **Host feedback:** the next-prize label is generic, and the connection badge does not reliably reflect a lost connection.
+- **Results:** confirmed records can be exported with authentication; there is no on-page winner list or full audit-history UI. Logs are not a tamper-evident ledger.
+- **Trial gaps:** the in-app CSV-template link is currently broken. Use the fictional seed for the trial. Export and payment are outside the bypass-mode walkthrough.
+- **Selection:** the live mutation differs from the Fisher–Yates helper and its recorded algorithm label. Fairness and replay guarantees require further work.
+- **Development mode:** bypass flags disable access checks and have no automatic production guard.
+
+See [security notes](SECURITY.md) and [the detailed boundaries](docs/ENGINEERING.md#security-and-production-boundaries).
+
+## Develop and contribute
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+```
+
+CI is configured for pull requests and pushes to `main`. The latest local checks passed type checking and 19 tests; lint completed with warnings. A production-build attempt was blocked by Google Fonts download timeouts. These checks do not replace a live-device rehearsal.
+
+Bug reports, small fixes and documentation improvements are welcome. Start with [contribution guidance](CONTRIBUTING.md), the [roadmap](docs/ROADMAP.md), and the [documentation map](docs/README.md).
+
+Released under the [MIT License](LICENSE).

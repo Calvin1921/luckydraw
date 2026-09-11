@@ -12,6 +12,12 @@ At a live event, drawing a name is only one part of the job. Someone has to prep
 
 [See the workflow](#from-preparation-to-prize) · [Try a fictional event](#try-it) · [Explore the engineering](docs/ENGINEERING.md) · [Contribute](CONTRIBUTING.md)
 
+## See the draw in motion
+
+![Existing in-app Nova demo: names cycle before the selected guest is revealed.](docs/media/draw-nova.gif)
+
+*Existing Nova app demo. The fictional-data screenshots below explain the organizer and host workflow around the reveal.*
+
 ## From preparation to prize
 
 ![Workflow illustration: the organizer prepares guests and prizes; a phone remote controls the draw; the stage and audience displays follow the shared result.](docs/media/three-screen-workflow.svg)
@@ -88,6 +94,15 @@ Next.js 15 · React 19 · TypeScript · Convex · Clerk · Tailwind CSS · Vites
 Convex mutations change the draw session; reactive queries update the views. The server chooses the guest, the host resolves the result, and the database records the action. Animations run locally, so shared results do not imply frame-locked displays.
 
 Nova uses GSAP, Framer Motion and canvas for the reveal. Motion supports the moment; it is secondary to operating the event.
+
+<details>
+<summary><strong>See the split-flap design prototype</strong></summary>
+
+![Existing split-flap ceremony prototype: letters settle into a winner board.](docs/media/clack-cinema-reveal.gif)
+
+This standalone three.js motion prototype explores an alternative reveal. It is not integrated into the app or part of the three-screen trial.
+
+</details>
 
 [Engineering evidence](docs/ENGINEERING.md) covers the implementation, accessibility hooks, loading/error states, selection algorithm and current tradeoffs. [The roadmap](docs/ROADMAP.md) turns the remaining gaps into concrete next steps.
 

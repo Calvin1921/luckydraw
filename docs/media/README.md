@@ -4,4 +4,4 @@
 
 The captures used an isolated local backend and a local development authentication bypass. They demonstrate the draw interface, not production authentication or deployment. Fonts may use local fallbacks. The workflow SVG is an explanatory illustration, not a screenshot.
 
-Other assets in this directory predate this presentation refresh and are not used in its screenshot walkthrough.
+The existing `draw-nova.gif` is featured in the README as an earlier in-app demo. `clack-cinema-reveal.gif` is retained as a standalone design prototype, not an integrated feature. These older assets retain their original example labels; they are separate from the new numbered fictional-participant captures. Other historical images are not used in the screenshot walkthrough.

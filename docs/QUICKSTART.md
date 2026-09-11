@@ -50,7 +50,7 @@ The organizer is a preparation/review dashboard; the **three live screens** are 
 1. Open the returned organizer path. Check **100 participants** and **3 tiers**.
 2. Open the remote path and select the first available prize tier. Open stage and audience using the same event ID. They may show waiting states until the tier starts.
 3. Tap **DRAW** on the remote. Watch the same selected guest appear on stage and audience; animations run locally and are not frame-locked.
-4. Tap **Confirm**, then its confirmation button. Return to the organizer overview: the confirmed result should be listed and one prize should be awarded.
+4. Tap **Confirm**, then its confirmation button. The remote should show one fewer prize remaining. The organizer overview enables CSV export, but does not show an on-page winner list.
 5. Draw again. Tap **Reject**, then its confirmation button. The prize stays available; tap **DRAW** again to retry. The rejected guest is not automatically disqualified and can be selected again.
 6. Enable your operating system’s reduced-motion preference and repeat a reveal. The Nova scene should use its static path.
 
@@ -66,7 +66,7 @@ The organizer is a preparation/review dashboard; the **three live screens** are 
 | Dashboard asks for sign-in or reports ownership errors | Check both demo switches and restart the Next.js process after local environment changes. |
 | Stage says it is waiting | Select a tier from the remote; check all windows use the new event ID. |
 | Draw is rejected as too soon | Wait at least three seconds between draws. |
-| Export fails in bypass mode | Winner CSV export requires a real authenticated token. Review confirmed winners in the dashboard for this demo. |
+| Export fails in bypass mode | Winner CSV export requires a real authenticated token. Use the remote’s remaining-prize count to verify confirmation; there is no on-page winner list yet. |
 
 For a physical phone, `localhost` refers to the phone itself. Use a reachable development host and ensure Clerk permits that origin; do not expose this bypass-enabled demo publicly. The one-laptop trial avoids that configuration.
 

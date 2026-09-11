@@ -28,6 +28,6 @@
 <text x="740" y="288" font-size="17" fill="#c8cdd6">Follow the same result</text>
 <text x="740" y="342" font-size="27" font-weight="700">Demo Guest 042</text>
 <text x="740" y="380" font-size="18" fill="#c8cdd6">Demo Gift Voucher</text>
-<text x="36" y="460" font-size="18">AFTER EACH DRAW</text><text x="260" y="460" font-size="18" fill="#d6dae1">Actions are logged; confirmed winners appear in the dashboard.</text>
+<text x="36" y="460" font-size="18">AFTER EACH DRAW</text><text x="260" y="460" font-size="18" fill="#d6dae1">Actions are logged; confirmed winners can be exported.</text>
 <text x="36" y="490" font-size="14" fill="#aab3c1">Workflow illustration • entirely fictional data • shared result state, not frame-locked animation</text>
 </g></svg>

@@ -12,7 +12,7 @@ An event organizer prepares participants and prizes once. The host runs the draw
 
 1. **Prepare:** add participants and prize tiers in the organizer dashboard. Bilingual participant labels are supported.
 2. **Run:** open the stage on a projector, the remote on the host’s phone, and the audience view on another display. Select a tier and tap **DRAW**.
-3. **Resolve:** confirm the winner, or reject an unclaimed result and draw again. Confirming awards the prize; rejecting leaves it available. The organizer can review confirmed winners afterward.
+3. **Resolve:** confirm the winner, or reject an unclaimed result and draw again. Confirming awards the prize; rejecting leaves it available. Confirmed winners are available through authenticated CSV export; an on-page winner list is not implemented.
 
 The intended outcome is less coordination during the event and a clear handover afterward. This repo does not claim measured time savings or live-event scale results.
 
@@ -45,7 +45,7 @@ The seed creates **100 fictional guests, 3 prize tiers and 14 prizes** in a new 
 |---|---|
 | Everyone follows the same result | Convex reactive queries share session state across the stage, remote and audience views. |
 | A mistaken confirmation matters | The remote asks for a second tap to confirm or reject; the server checks session state and the supplied token. |
-| The organizer needs a record | Drawn, confirmed and rejected actions create log entries; confirmed results appear in the dashboard. |
+| The organizer needs a record | Drawn, confirmed and rejected actions create log entries; the dashboard enables CSV export after confirmation, but does not list winners on screen. |
 | People use different devices and motion settings | Responsive controls, bilingual labels, loading/empty/error states, and a static reduced-motion path in the Nova scene. These are implementation evidence, not a WCAG certification. |
 | A convincing demo needs honest boundaries | Owner checks protect participant contact records and confirmed logs when bypass is off. Public session queries still expose control tokens; real-event deployment needs stronger authorization. |
 

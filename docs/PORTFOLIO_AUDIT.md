@@ -2,6 +2,10 @@
 
 Scope: Lucky Draw only. This refresh targets a reviewer who wants to understand the organizer’s problem and product outcome within a minute.
 
+## Follow-up live review
+
+A subsequent local, fictional-data rehearsal verified a draw, confirmation, rejection and connection-loss feedback. It found that the organizer does **not** render a winner list; it enables CSV export. The earlier summary and script wording were corrected. The live review also found a missing CSV template, an initial stage/QR handoff gap, generic next-prize text and misleading connection status. These need a focused product pass before the polished recording. The original verification notes below describe the earlier documentation-only pass.
+
 ## Findings and changes
 
 | Before | Change |

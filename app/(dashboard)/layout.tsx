@@ -104,7 +104,7 @@ function Sidebar({ mode, onClose }: { mode: "auth" | "dev" | "loading"; onClose?
         ) : mode === "loading" ? (
           <div className="w-7 h-7 rounded-full animate-pulse" style={{ background: colors.surface }} />
         ) : (
-          <span className="text-xs" style={{ color: colors.textDim }}>dev@local</span>
+          <span className="text-xs" style={{ color: colors.textDim }}>Demo workspace</span>
         )}
       </div>
     </aside>

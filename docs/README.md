@@ -1,5 +1,18 @@
 # Lucky Draw — Documentation
 
+## Start here
+
+| Guide | Purpose |
+|---|---|
+| [Quick start](QUICKSTART.md) | Service setup, one-command fake seed, three-window trial and recovery |
+| [80-second demo script](DEMO_VIDEO.md) | Narration, shot list and fake-data recording instructions |
+| [Engineering evidence](ENGINEERING.md) | Current behavior, source links and production boundaries |
+| [Portfolio audit](PORTFOLIO_AUDIT.md) | Findings, changes and verification limits for this refresh |
+
+## Historical product and design documents
+
+These capture prior plans and reviews, not a current production sign-off. Start with the engineering guide above for current boundaries.
+
 ## Primary Documents
 
 | Document | Purpose |
@@ -27,7 +40,7 @@ Referenced by QA.md and TODO.md for deeper detail:
 |-----------|----------|
 | [`design/`](./design/) | Animation knowledge base, animation quality rubric, the Nova draw-scene strategy doc |
 | [`design-review/`](./design-review/) | Capture-review-iterate stills behind the draw scene's visual development |
-| [`media/`](./media/) | GIF/screenshot assets embedded in the root README |
+| [`media/`](./media/) | Current workflow illustration and historical GIF/screenshot assets |
 
 ## Archive (`archive/`)
 
